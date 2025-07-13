@@ -1,12 +1,12 @@
 from django.db import models
 # from django.contrib.auth.models import User
 from datetime import date, timedelta
-from office.models.lead_model import LeadModel
+
 
 class OrderModel(models.Model):
-    lead = models.ForeignKey(LeadModel, on_delete=models.PROTECT, verbose_name='Лид')
+    lead = models.ForeignKey('LeadModel', on_delete=models.PROTECT, verbose_name='Лид')
     contract_date = models.DateField(verbose_name='Дата заключения', null=False, blank=False)
-    company = models.ForeignKey('manufacture.models.CompanyModel', on_delete=models.PROTECT, verbose_name='Компания', default=1)
+    company = models.ForeignKey('company.CompanyModel', on_delete=models.PROTECT, verbose_name='Компания', default=1)
     product = models.CharField(max_length=30, verbose_name='Наименование')
     phone = models.CharField(max_length=11, verbose_name='Телефон')
     email = models.CharField(max_length=30, verbose_name='E-mail', null=True, blank=True)

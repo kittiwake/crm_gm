@@ -1,10 +1,9 @@
 from django.db import models
-from company_model import ProductModel
 
 class EtapModel(models.Model):
     
     title = models.CharField(max_length=100)
-    product = models.ForeignKey(ProductModel, on_delete=models.PROTECT, verbose_name='Продукт')
+    product = models.ForeignKey('company.ProductModel', on_delete=models.PROTECT, verbose_name='Продукт')
 
     def __str__(self):
         return self.title
@@ -16,8 +15,8 @@ class EtapModel(models.Model):
         ordering = ['title', 'product']
 
 class OrderEtapModel(models.Model):
-    order = models.ForeignKey('ofice.OrderModel', on_delete=models.PROTECT, verbose_name='Заказ')
-    etap = models.ForeignKey(EtapModel, on_delete=models.PROTECT, verbose_name='Этап')
+    order = models.ForeignKey('office.OrderModel', on_delete=models.PROTECT, verbose_name='Заказ')
+    etap = models.ForeignKey('EtapModel', on_delete=models.PROTECT, verbose_name='Этап')
     date = models.DateField(verbose_name='Дата', null=True, blank=True)
     status = models.CharField(max_length=16, verbose_name='Статус', choices=[
         ('NEW', 'Новый'),

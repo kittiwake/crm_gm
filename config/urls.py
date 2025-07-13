@@ -16,10 +16,9 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from office.views import OrderQuickDetailsView, Timetable
+from office.views import  Timetable
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', Timetable.as_view(), name='timetable'),
-    path('api/orders/<int:order_id>/quick_details/', OrderQuickDetailsView.as_view(), name='order-quick-details'),
 ]

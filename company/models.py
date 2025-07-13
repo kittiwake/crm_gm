@@ -1,5 +1,4 @@
 from django.db import models
-
 class ProductModel(models.Model):
     title = models.CharField(max_length=50)
 
@@ -13,9 +12,8 @@ class ProductModel(models.Model):
         ordering = ['title']
 
 class CompanyModel(models.Model):
-
     title = models.CharField(max_length=50, verbose_name='Наименование')
-    product = models.ForeignKey(ProductModel, on_delete=models.PROTECT, verbose_name='Продукт')
+    product = models.ForeignKey('ProductModel', on_delete=models.PROTECT, verbose_name='Продукт')
     is_active = models.BooleanField(default=True, verbose_name='Активна')
 
     def __str__(self):
@@ -26,4 +24,3 @@ class CompanyModel(models.Model):
         verbose_name = 'Компания'
         verbose_name_plural = 'Компании'
         ordering = ['title']
-

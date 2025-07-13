@@ -3,7 +3,7 @@ from django.utils import timezone
 from datetime import timedelta
 
 from django.views import View
-from .models import OrderModel
+from .models.order_model import OrderModel
 
 
 class Timetable(View):

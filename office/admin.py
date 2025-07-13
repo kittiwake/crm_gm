@@ -1,7 +1,7 @@
 from django.contrib import admin
 
-from .models import LeadModel
-from .models import OrderModel
+from .models.lead_model import LeadModel
+from .models.order_model import OrderModel
 
 @admin.register(OrderModel)
 class OrderAdmin(admin.ModelAdmin):
