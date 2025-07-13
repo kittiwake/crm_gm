@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h2>Календарь заказов</h2>
+    
+    <table class="table table-bordered calendar-table">
+        <thead>
+            <tr>
+                <th>Пн</th>
+                <th>Вт</th>
+                <th>Ср</th>
+                <th>Чт</th>
+                <th>Пт</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for week in weeks %}
+            <tr>
+                {% for day in week %}
+                <td class="{% if day.is_today %}today{% endif %}">
+                    <div class="calendar-date">
+                        {{ day.date|date:"d.m" }}
+                    </div>
+                    <div class="calendar-orders">
+                        {% for order in day.orders %}
+<div class="order-item 
+     {% if order.is_urgent %}urgent{% endif %}" 
+     data-order-id="{{ order.id }}"
+         data-client-name="{{ order.lead.name }}"
+         data-contract="{{ order.lead.contract }}"
+         data-term="{{ order.term }}"
+         data-sum="{{ order.sum }}"
+         data-beznal="{{ order.beznal }}">
+    
+  {{ order.lead.contract }}
+</div>
+                        {% empty %}
+                        <div class="no-orders">Нет заказов</div>
+                        {% endfor %}
+                    </div>
+                </td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+    <!-- Модальное окно -->
+    <div id="orderModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h3>Детали заказа</h3>
+            <div id="modalContent"></div>
+        </div>
+    </div>
+
+
+
+<style>
+    .calendar-table {
+        table-layout: fixed;
+    }
+    .calendar-date {
+        font-weight: bold;
+        border-bottom: 1px solid #eee;
+        padding: 5px;
+    }
+    .today {
+        background-color: #fffde7;
+    }
+    .order-item {
+        padding: 3px;
+        margin: 2px 0;
+        font-size: 0.9em;
+        border-left: 3px solid #4CAF50;
+    }
+    .order-item.urgent {
+        border-left-color: #f44336;
+    }
+    .no-orders {
+        color: #999;
+        font-style: italic;
+        padding: 3px;
+    }
+
+    /* Стили для модального окна */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 100;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.4);
+}
+
+.modal-content {
+  background-color: #fefefe;
+  margin: 15% auto;
+  padding: 20px;
+  border: 1px solid #888;
+  width: 80%;
+  max-width: 500px;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.order-item {
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.order-item:hover {
+  background-color: #f5f5f5;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Элементы DOM
+    const modal = document.getElementById('orderModal');
+    const modalContent = document.getElementById('modalContent');
+    const closeBtn = document.querySelector('.close');
+    let hoverTimeout;
+
+    // Обработчики событий для всех элементов заказа
+    document.querySelectorAll('.order-item').forEach(item => {
+        item.addEventListener('mouseenter', function() {
+            // Устанавливаем таймер на 2 секунды
+            hoverTimeout = setTimeout(() => {
+                // Получаем все данные из data-атрибутов
+                const orderData = {
+                    contract: this.dataset.contract,
+                    name: this.dataset.clientName,
+                    term: this.dataset.term.toLocaleDateString('%d.%m.%Y'), // Дата уже отформатирована в шаблоне
+                    sum: this.dataset.sum,
+                    beznal: this.dataset.beznal === 'true'
+                };
+                
+                showModal(orderData);
+            }, 2000);
+        });
+
+        item.addEventListener('mouseleave', function() {
+            // Сбрасываем таймер при уходе курсора
+            clearTimeout(hoverTimeout);
+        });
+    });
+
+    // Показать модальное окно с данными
+    function showModal(data) {
+        modalContent.innerHTML = `
+            <p><strong>Номер:</strong> ${data.contract}</p>
+            <p><strong>Клиент:</strong> ${data.name}</p>
+            <p><strong>Срок:</strong> ${data.term}</p>
+            <p><strong>Сумма:</strong> ${data.sum} ₽</p>
+            <p><strong>Форма оплаты:</strong> ${data.beznal ? 'Безнал' : 'Наличные'}</p>
+        `;
+        modal.style.display = 'block';
+    }
+
+    // Закрытие модального окна
+    closeBtn.addEventListener('click', function() {
+        modal.style.display = 'none';
+    });
+
+    // Закрытие при клике вне модального окна
+    window.addEventListener('click', function(event) {
+        if (event.target === modal) {
+            modal.style.display = 'none';
+        }
+    });
+});
+</script>
+{% endblock %}

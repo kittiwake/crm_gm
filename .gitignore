@@ -1,0 +1,45 @@
+# Игнорировать файлы базы данных SQLite
+*.sqlite3
+*.sqlite
+
+# Игнорировать файлы окружения Python
+venv/
+.env
+.env.local
+.env*.local
+
+# Игнорировать кэш Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Игнорировать файлы IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Игнорировать статические файлы (если они генерируются)
+staticfiles/
+media/
+
+# Игнорировать логи и временные файлы
+*.log
+*.pot
+*.pyc
+
+# Игнорировать файлы миграций (опционально, если не хотите их коммитить)
+*/migrations/*.py
+!*/migrations/__init__.py
+
+# Игнорировать CSV файлы в папке for_import (если они не нужны в репозитории)
+for_import/*.csv
+
+# Игнорировать файлы, созданные pip
+pip-delete-this-directory.txt
+
+# Игнорировать файлы, созданные setuptools
+*.egg-info/
+*.egg
+dist/
+build/
