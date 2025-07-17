@@ -6,6 +6,7 @@ import csv
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 django.setup()
 
+from company.models import CompanyModel
 from office.models.lead_model import LeadModel
 from office.models.order_model import OrderModel
 
@@ -31,12 +32,13 @@ def import_orders():
         reader = csv.DictReader(f)
         for row in reader:
             lead = LeadModel.objects.get(id=int(row['lead']))
+            company = CompanyModel.objects.get(id=1)
 
             OrderModel.objects.update_or_create(
                 lead=lead,
                 contract_date=row['contract_date'],
                 defaults={
-                    'company': row['company'],
+                    'company': company,
                     'product': row['product'],
                     'phone': row['phone'],
                     'email': row['email'] if row['email'] != 'null' else None,
@@ -52,8 +54,8 @@ def import_orders():
                     'sumcollect': float(row['sumcollect'])
                 }
             )    
-            print("Orders imported!")
+        print("Orders imported!")
 
 if __name__ == '__main__':
-    # import_leads()
+    import_leads()
     import_orders()
