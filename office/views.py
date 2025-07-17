@@ -21,6 +21,12 @@ class Timetable(View):
             term__lte=end_date
         ).order_by('term')
         
+        for order in orders:
+            print(order.sum)
+            print(order.term)
+            print(type(order.term))
+            print('-' * 8)
+
         # Создаем структуру календаря
         calendar_weeks = []
         current_date = start_date
@@ -52,3 +58,13 @@ class Timetable(View):
         return render(request, self.template_name, context)
     
 
+class Order(View):
+    template_name = 'order.html'
+
+    def get(self, request, id):
+        order = OrderModel.objects.get(id=id)
+        context = {
+            'order': order
+        }
+
+        return render(request, self.template_name, context)

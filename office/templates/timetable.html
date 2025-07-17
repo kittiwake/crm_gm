@@ -29,7 +29,7 @@
      data-order-id="{{ order.id }}"
          data-client-name="{{ order.lead.name }}"
          data-contract="{{ order.lead.contract }}"
-         data-term="{{ order.term }}"
+         data-term="{{ order.term|date:'Y-m-d' }}"
          data-sum="{{ order.sum }}"
          data-beznal="{{ order.beznal }}">
     
@@ -129,18 +129,19 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.order-item').forEach(item => {
         item.addEventListener('mouseenter', function() {
             // Устанавливаем таймер на 2 секунды
+           
             hoverTimeout = setTimeout(() => {
                 // Получаем все данные из data-атрибутов
                 const orderData = {
                     contract: this.dataset.contract,
                     name: this.dataset.clientName,
-                    term: this.dataset.term.toLocaleDateString('%d.%m.%Y'), // Дата уже отформатирована в шаблоне
+                    term: this.dataset.term, // Дата уже отформатирована в шаблоне
                     sum: this.dataset.sum,
                     beznal: this.dataset.beznal === 'true'
                 };
                 
                 showModal(orderData);
-            }, 2000);
+            }, 1000);
         });
 
         item.addEventListener('mouseleave', function() {
@@ -150,17 +151,36 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Показать модальное окно с данными
-    function showModal(data) {
-        modalContent.innerHTML = `
-            <p><strong>Номер:</strong> ${data.contract}</p>
-            <p><strong>Клиент:</strong> ${data.name}</p>
-            <p><strong>Срок:</strong> ${data.term}</p>
-            <p><strong>Сумма:</strong> ${data.sum} ₽</p>
-            <p><strong>Форма оплаты:</strong> ${data.beznal ? 'Безнал' : 'Наличные'}</p>
-        `;
-        modal.style.display = 'block';
-    }
+function showModal(data) {
+    const fragment = document.createDocumentFragment(); // Создаём "виртуальный" контейнер
 
+    const formatDate = (dateStr) => { 
+        const date = new Date(dateStr);
+        return date.toLocaleDateString('ru-RU', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+        }).replace(/\//g, '.');
+     }; // Тот же форматировщик даты
+
+    const paragraphs = [
+        { label: "Номер", value: data.contract },
+        { label: "Клиент", value: data.name },
+        { label: "Срок", value: formatDate(data.term) },
+        { label: "Сумма", value: `${data.sum} ₽` },
+        { label: "Форма оплаты", value: data.beznal ? 'Безнал' : 'Наличные' }
+    ];
+
+    paragraphs.forEach(({ label, value }) => {
+        const p = document.createElement('p');
+        p.innerHTML = `<strong>${label}:</strong> ${value}`; // Можно и createElement, как выше
+        fragment.appendChild(p);
+    });
+
+    modalContent.innerHTML = ''; // Очищаем
+    modalContent.appendChild(fragment); // Добавляем всё за одну операцию
+    modal.style.display = 'block';
+}
     // Закрытие модального окна
     closeBtn.addEventListener('click', function() {
         modal.style.display = 'none';
