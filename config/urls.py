@@ -22,4 +22,5 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', Timetable.as_view(), name='timetable'),
     path('order/<int:id>', Order.as_view(), name='order'),
+    path('order/set-plan-date/', Order.as_view(), name='set_plan_date'),
 ]

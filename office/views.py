@@ -1,6 +1,8 @@
+import json
+from django.http import JsonResponse
 from django.shortcuts import render
 from django.utils import timezone
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from django.views import View
 
@@ -72,3 +74,41 @@ class Order(View):
         }
 
         return render(request, self.template_name, context)
+
+    def post(self, request):
+        print(request.path)
+        if 'set-plan-date' in request.path:
+            # Обработка установки даты
+            print('идем менять дату')
+            return self.handle_set_plan_date(request)
+        
+        return JsonResponse({"error": "Unknown action"}, status=400)
+
+    def handle_set_plan_date(self, request):
+        try:
+            data = json.loads(request.body)
+            print(data)
+            order_id = data.get('order_id')
+            plan_date = data.get('plan_date')
+            plan_date = datetime.strptime(plan_date, '%Y-%m-%d').date()
+            if not order_id or not plan_date:
+                return JsonResponse({"error": "Missing order_id or plan_date"}, status=400)
+
+            # Одной операцией обновляем или создаем запись
+            order, created = PlanModel.objects.update_or_create(
+                order_id=order_id,  # Используем order_id вместо order__id
+                defaults={
+                    'plan_date': plan_date
+                }
+            )
+            
+            return JsonResponse({
+                "success": True,
+                "formatted_date": order.plan_date.strftime('%d.%m.%Y'),
+                "created": created  # Дополнительно возвращаем флаг создания
+            }, status=200)
+            
+        except OrderModel.DoesNotExist:
+            return JsonResponse({"error": "Order not found"}, status=404)
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=400)
