@@ -84,7 +84,13 @@
 <div class="container">
     <div class="top-section">
         <div class="order-number">Заказ №{{ order.lead.contract }}</div>
-        <div class="contract-date">Дата заключения: {{ order.contract_date|date:"d.m.Y" }}</div>
+        <div class="contract-date">
+
+            <p>Дата заключения: {{ order.contract_date|date:"d.m.Y" }}</p>
+            <p>Срок договора: {{ order.term|date:"d.m.Y" }}</p>
+            <p>Дата вывоза: {{ order.planmodel.plan_date|date:"d.m.Y" }}</p>
+        
+        </div>
     </div>
 
     <div class="main-content">

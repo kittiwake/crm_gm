@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'employees',
     'company',
     'office',
+    'plan',
     'manufacture',
 ]
 

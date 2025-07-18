@@ -1,5 +1,54 @@
 {% extends "base.html" %}
 
+{% block sidebar %}
+<div class="sidebar-container" style='background-color: #f5f5f5;'>
+    <h2>Лист ожидания</h2>
+    {% for order in orders_without_plan %}
+    <div class="waiting-order">
+        <a href="{% url 'order' order.id %}">
+            {{ order.lead.contract }}
+        </a>
+    </div>
+    {% endfor %}
+    {% for plan in waiting_orders %}
+    <div class="waiting-order">
+        <a href="{% url 'order' plan.order.id %}">
+            {{ plan.order.lead.contract }}
+        </a>
+    </div>
+    {% endfor %}
+</div>
+<style>
+    .sidebar-container {
+        padding: 20px;
+        border-right: 1px solid #ddd;
+    }
+
+    .sidebar-container h2 {
+        font-size: 1.2rem;
+        margin-top: 0;
+        color: #333;
+        border-bottom: 2px solid #ccc;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+    }
+
+    .waiting-order a {
+        text-decoration: none;
+        color: #0d1925;
+        font-weight: 500;
+        display: block;
+        padding: 8px 12px;
+        border-radius: 8px;
+        transition: background-color 0.2s ease;
+    }
+
+    .waiting-order a:hover {
+        background-color: #e9ecef;
+    }
+</style>
+{% endblock sidebar%}
+
 {% block content %}
 <div class="container">
     <h2>Календарь заказов</h2>
@@ -24,17 +73,21 @@
                     </div>
                     <div class="calendar-orders">
                         {% for order in day.orders %}
-<div class="order-item 
-     {% if order.is_urgent %}urgent{% endif %}" 
-     data-order-id="{{ order.id }}"
-         data-client-name="{{ order.lead.name }}"
-         data-contract="{{ order.lead.contract }}"
-         data-term="{{ order.term|date:'Y-m-d' }}"
-         data-sum="{{ order.sum }}"
-         data-beznal="{{ order.beznal }}">
-    
-  {{ order.lead.contract }}
-</div>
+                        <a href="{% url 'order' order.id %}">
+
+                            <div class="order-item 
+                                {% if order.is_urgent %}urgent{% endif %}" 
+                                data-order-id="{{ order.id }}"
+                                data-client-name="{{ order.lead.name }}"
+                                data-contract="{{ order.lead.contract }}"
+                                data-term="{{ order.term|date:'Y-m-d' }}"
+                                data-sum="{{ order.sum }}"
+                                data-beznal="{{ order.beznal }}">
+                                
+                                {{ order.lead.contract }}
+                            </div>
+                        </a>
+
                         {% empty %}
                         <div class="no-orders">Нет заказов</div>
                         {% endfor %}
@@ -65,6 +118,10 @@
         font-weight: bold;
         border-bottom: 1px solid #eee;
         padding: 5px;
+    }
+    .calendar-orders > a{
+        text-decoration: none;
+        color: inherit;
     }
     .today {
         background-color: #fffde7;
