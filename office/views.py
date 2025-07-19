@@ -6,6 +6,8 @@ from datetime import datetime, timedelta
 
 from django.views import View
 
+from office.forms import LeadForm
+from office.models.lead_model import LeadModel
 from plan.models import PlanModel
 from .models.order_model import OrderModel
 
@@ -110,5 +112,48 @@ class Order(View):
             
         except OrderModel.DoesNotExist:
             return JsonResponse({"error": "Order not found"}, status=404)
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=400)
+        
+
+class Lead(View):
+    template_name = 'add_lead.html'
+    form_class = LeadForm
+
+    def get(self, request, id=None):
+        if id:
+            lead = LeadModel.objects.get(id=id)
+            form = self.form_class(instance=lead)
+        else:
+            form = self.form_class()
+        
+        context = {
+            'form': form,
+            'lead': lead if id else None
+        }
+        return render(request, self.template_name, context)
+    
+    def post(self, request, id=None):
+        if 'add-lead' in request.path:
+            return self.handle_add_lead(request)
+        
+        return JsonResponse({"error": "Unknown action"}, status=400)
+    
+    def handle_add_lead(self, request):
+        try:
+            form = self.form_class(request.POST)
+            if form.is_valid():
+                lead = form.save()
+                return JsonResponse({
+                    'success': True,
+                    'id': lead.id,
+                    'contract': lead.contract
+                })
+            else:
+                return JsonResponse({
+                    'success': False,
+                    'errors': form.errors
+                }, status=400)
+                
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=400)

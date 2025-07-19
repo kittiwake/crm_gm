@@ -16,11 +16,12 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from office.views import  Timetable, Order
+from office.views import  Lead, Timetable, Order
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', Timetable.as_view(), name='timetable'),
     path('order/<int:id>', Order.as_view(), name='order'),
     path('order/set-plan-date/', Order.as_view(), name='set_plan_date'),
+    path('lead/add-lead', Lead.as_view(), name='add_lead'),
 ]
