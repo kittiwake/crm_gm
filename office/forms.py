@@ -1,6 +1,11 @@
 from django import forms
 
 from office.models.lead_model import LeadModel
+from office.models.order_model import OrderModel
+
+from django.forms import DateInput, NumberInput, TextInput, CheckboxInput, Select
+from datetime import date, timedelta, timezone
+
 
 class LeadForm(forms.ModelForm):
     class Meta:
@@ -17,6 +22,27 @@ class LeadForm(forms.ModelForm):
         widgets = {
             'contact_date': forms.DateInput(attrs={'type': 'date'}),
             'note': forms.Textarea(attrs={'rows': 3}),
+            'contract': TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Автоматическая генерация'
+            }),
+            'name': TextInput(attrs={
+                'class': 'form-control'
+            }),
+            'product': TextInput(attrs={
+                'class': 'form-control'
+            }),
+            'adress': TextInput(attrs={
+                'class': 'form-control'
+            }),
+            'phone': TextInput(attrs={
+                'class': 'form-control',
+            }),
+            'email': TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'example@domain.com'
+            }),
+
         }
 
     def clean_phone(self):
@@ -25,8 +51,128 @@ class LeadForm(forms.ModelForm):
             raise forms.ValidationError("Телефон должен содержать только цифры")
         return phone
 
-    def clean_email(self):
-        email = self.cleaned_data['email']
-        if '@' not in email:
-            raise forms.ValidationError("Введите корректный email")
-        return email
+
+# class OrderForm(forms.ModelForm):
+#     def __init__(self, *args, **kwargs):
+#         lead_id = kwargs.pop('lead_id', None)
+#         super().__init__(*args, **kwargs)
+        
+#         if lead_id:
+#             try:
+#                 lead = LeadModel.objects.get(pk=lead_id)
+#                 self.fields['product'].initial = lead.product
+#                 self.fields['phone'].initial = lead.phone
+#                 self.fields['email'].initial = lead.email
+#             except LeadModel.DoesNotExist:
+#                 pass
+
+
+class OrderForm(forms.ModelForm):
+    class Meta:
+        model = OrderModel
+        fields = '__all__'
+        widgets = {
+            'contract': TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Автоматическая генерация'
+            }),
+            'contract_date': DateInput(attrs={
+                'type': 'date',
+                'class': 'form-control'
+            }),
+            'client_name': TextInput(attrs={
+                'class': 'form-control'
+            }),
+            'delivery_address': TextInput(attrs={
+                'class': 'form-control'
+            }),
+            'term': DateInput(attrs={
+                'type': 'date',
+                'class': 'form-control'
+            }),
+            'add_date': DateInput(attrs={
+                'type': 'date',
+                'class': 'form-control',
+                'readonly': 'readonly'
+            }),
+            'product': TextInput(attrs={
+                'class': 'form-control',
+            }),
+            'phone': TextInput(attrs={
+                'class': 'form-control',
+            }),
+            'email': TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'example@domain.com'
+            }),
+            'sum': NumberInput(attrs={
+                'class': 'form-control'
+            }),
+            'prepayment': NumberInput(attrs={
+                'class': 'form-control'
+            }),
+            'rebate': NumberInput(attrs={
+                'class': 'form-control'
+            }),
+            'note': TextInput(attrs={
+                'class': 'form-control'
+            }),
+            'sumdeliv': NumberInput(attrs={
+                'class': 'form-control'
+            }),
+            'sumcollect': NumberInput(attrs={
+                'class': 'form-control'
+            }),
+            'personal_agree': Select(attrs={
+                'class': 'form-select'
+            }),
+            'rassr': CheckboxInput(attrs={
+                'class': 'form-check-input'
+            }),
+            'beznal': CheckboxInput(attrs={
+                'class': 'form-check-input'
+            }),
+            'archive': CheckboxInput(attrs={
+                'class': 'form-check-input'
+            }),
+        }
+
+    def __init__(self, *args, **kwargs):
+        lead_id = kwargs.pop('lead_id', None)
+        super().__init__(*args, **kwargs)
+        self.fields.pop('attention', 0)
+        
+        # Установка значений по умолчанию
+        self.fields['add_date'].initial = date.today()
+        self.fields['term'].initial = (date.today() + timedelta(weeks=4)).strftime('%Y-%m-%d')
+        self.fields['personal_agree'].initial = False
+        
+        # Обработка привязки к лиду
+        if lead_id:
+            try:
+                lead = LeadModel.objects.get(pk=lead_id)
+                self.fields['contract'].initial = lead.contract
+                self.fields['client_name'].initial = lead.name
+                self.fields['product'].initial = lead.product
+                self.fields['delivery_address'].initial = lead.adress
+                self.fields['phone'].initial = lead.phone
+                self.fields['email'].initial = lead.email
+                self.fields['lead'].initial = lead.id
+                # Делаем поля из лида только для чтения
+                self.fields['contract'].widget.attrs['readonly'] = True
+            except LeadModel.DoesNotExist:
+                pass
+        else:
+            # Если заказ создается без лида, разрешаем редактирование этих полей
+            self.fields['contract'].widget.attrs.pop('readonly', None)
+
+        # Настройка скрытых полей
+        self.fields['lead'].widget = forms.HiddenInput()
+        self.fields['company'].widget = forms.HiddenInput()
+        self.fields['company'].initial = 1
+        
+        # Дополнительные настройки полей
+        self.fields['email'].required = False
+        self.fields['note'].required = False
+        self.fields['personal_agree'].required = False
+        self.fields['add_date'].required = False

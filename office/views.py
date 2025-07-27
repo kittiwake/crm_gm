@@ -1,12 +1,14 @@
 import json
 from django.http import JsonResponse
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404, render
+from django.urls import reverse_lazy
 from django.utils import timezone
 from datetime import datetime, timedelta
+from django.db import transaction
 
 from django.views import View
 
-from office.forms import LeadForm
+from office.forms import LeadForm, OrderForm
 from office.models.lead_model import LeadModel
 from plan.models import PlanModel
 from .models.order_model import OrderModel
@@ -22,12 +24,12 @@ class Timetable(View):
         end_date = today + timedelta(weeks=6)
         
         # Получаем заказы за период
-        orders = OrderModel.objects.select_related('planmodel').filter(
+        orders = OrderModel.objects.select_related('lead').select_related('planmodel').filter(
             planmodel__plan_date__gte=start_date,
             planmodel__plan_date__lte=end_date
         ).order_by('term')
         
-        waiting_orders = PlanModel.objects.filter(
+        waiting_orders = PlanModel.objects.select_related('order').filter(
             plan_date__isnull=True,
         ).order_by('order')
         print(waiting_orders)
@@ -115,45 +117,73 @@ class Order(View):
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=400)
         
+from django.views.generic.edit import CreateView
 
-class Lead(View):
-    template_name = 'add_lead.html'
+class CreateLead(CreateView):
+    model = LeadModel
     form_class = LeadForm
+    template_name = 'add_lead.html'
+    success_url = reverse_lazy('create_lead')
 
-    def get(self, request, id=None):
-        if id:
-            lead = LeadModel.objects.get(id=id)
-            form = self.form_class(instance=lead)
-        else:
-            form = self.form_class()
-        
-        context = {
-            'form': form,
-            'lead': lead if id else None
-        }
-        return render(request, self.template_name, context)
+    def form_valid(self, form):
+        # Устанавливаем текущую дату перед сохранением
+        form.instance.contact_date = timezone.now().date()
+        form.instance.phone = '+7' + form.instance.phone
+        return super().form_valid(form)
+
+
+class CreateOrder(CreateView):
+    model = OrderModel
+    form_class = OrderForm
+    template_name = 'add_order.html'
+    success_url = reverse_lazy('create_order')
+
+
+    def get_context_data(self, **kwargs):
+        """Добавляем список лидов в контекст шаблона"""
+        context = super().get_context_data(**kwargs)
+        context['completed_leads'] = LeadModel.objects.filter(status=LeadModel.Status.CONTRACT)
+        print(context['completed_leads'])
+        return context
     
-    def post(self, request, id=None):
-        if 'add-lead' in request.path:
-            return self.handle_add_lead(request)
-        
-        return JsonResponse({"error": "Unknown action"}, status=400)
+    def get_initial(self):
+        """Устанавливаем начальные значения для формы"""
+        initial = super().get_initial()
+        if 'lead_id' in self.kwargs:
+            lead = get_object_or_404(LeadModel, pk=self.kwargs['lead_id'])
+            initial.update({
+                'contract': lead.contract,
+                'product': lead.product,
+                'phone': lead.phone,
+                'email': lead.email,
+                'lead': lead.id
+            })
+        return initial
     
-    def handle_add_lead(self, request):
+    def get_form_kwargs(self):
+        """Добавляем lead_id в аргументы формы"""
+        kwargs = super().get_form_kwargs()
+        if 'lead_id' in self.kwargs:
+            kwargs['lead_id'] = self.kwargs['lead_id']
+        return kwargs
+    
+    def form_valid(self, form):
+        """Дополнительная обработка перед сохранением"""
+        print("Form is valid:", form.is_valid())  # Проверка валидности
+        print("Form errors:", form.errors)
         try:
-            form = self.form_class(request.POST)
-            if form.is_valid():
-                lead = form.save()
-                return JsonResponse({
-                    'success': True,
-                    'id': lead.id,
-                    'contract': lead.contract
-                })
-            else:
-                return JsonResponse({
-                    'success': False,
-                    'errors': form.errors
-                }, status=400)
-                
+            with transaction.atomic():
+                if 'lead_id' in self.kwargs:
+                    lead = get_object_or_404(LeadModel, pk=self.kwargs['lead_id'])
+                    form.instance.add_date = timezone.now().date()
+                    form.instance.personal_agree = False
+                    form.instance.lead = lead
+                    response = super().form_valid(form)
+                    lead.status = LeadModel.Status.DONE
+                    lead.save()
+                    return response
+                return super().form_valid(form)
         except Exception as e:
-            return JsonResponse({"error": str(e)}, status=400)
+            print("Error:", e)
+            return self.form_invalid(form)
+

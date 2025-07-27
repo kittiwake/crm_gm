@@ -43,6 +43,7 @@
     }
 
     @media (max-width: 768px) {
+
         .row-align,
         .textarea-group {
             flex-direction: column;
@@ -62,7 +63,8 @@
 
 <div class="container">
     <h2 class="mb-4 text-center">Добавить новый заказ</h2>
-    <form id="leadForm" method="post" novalidate>
+    {% load widget_tweaks %}
+    <form id="leadForm" method="post">
         {% csrf_token %}
 
         <div class="row-align row">
@@ -98,25 +100,31 @@
         </div>
 
         <div class="row-align row">
-            <label for="{{ form.phone.id_for_label }}" class="col-sm-4 col-form-label">Телефон</label>
-            <div class="col-sm-8">
-                {{ form.phone }}
-                <div class="error" id="phoneError"></div>
+            <div class="col-sm-6">
+                <label for="{{ form.phone.id_for_label }}">Телефон</label>
+                <div class="input-group">
+
+                    <span class="input-group-text" id="inputGroupPrepend2">+7</span>
+                    {{ form.phone }}
+                    <div class="error" id="phoneError"></div>
+                </div>
+            </div>
+            <div class="col-sm-6">
+                <label for="{{ form.email.id_for_label }}">E-mail</label>
+                {{ form.email }}
+                <div class="invalid-feedback">
+                    {{ form.email.errors }}
+                </div>
+
             </div>
         </div>
 
-        <div class="row-align row">
-            <label for="{{ form.email.id_for_label }}" class="col-sm-4 col-form-label">E-mail</label>
-            <div class="col-sm-8">
-                {{ form.email }}
-                <div class="error" id="emailError"></div>
-            </div>
-        </div>
 
         <div class="textarea-group row">
             <label for="{{ form.note.id_for_label }}" class="col-sm-4 col-form-label">Примечание</label>
             <div class="col-sm-8">
-                {{ form.note }}
+                <textarea class="form-control" id="{{ form.note.id_for_label }}" name="{{ form.note.name }}"
+                    rows="3">{% if form.note.value %}{{ form.note.value }}{% endif %}</textarea>
                 <div class="error" id="noteError"></div>
             </div>
         </div>
@@ -128,61 +136,5 @@
         </div>
     </form>
 </div>
-
-<script>
-    document.getElementById('leadForm').addEventListener('submit', function (e) {
-        let isValid = true;
-
-        // Очистка предыдущих ошибок
-        document.querySelectorAll('.error').forEach(el => el.textContent = '');
-
-        const contract = document.getElementById('id_contract').value.trim();
-        const name = document.getElementById('id_name').value.trim();
-        const product = document.getElementById('id_product').value.trim();
-        const adress = document.getElementById('id_adress').value.trim();
-        const phone = document.getElementById('id_phone').value.trim();
-        const email = document.getElementById('id_email').value.trim();
-
-        if (!contract) {
-            document.getElementById('contractError').textContent = 'Это поле обязательно.';
-            isValid = false;
-        }
-
-        if (!name) {
-            document.getElementById('nameError').textContent = 'Это поле обязательно.';
-            isValid = false;
-        }
-
-        if (!product) {
-            document.getElementById('productError').textContent = 'Это поле обязательно.';
-            isValid = false;
-        }
-
-        if (!adress) {
-            document.getElementById('adressError').textContent = 'Это поле обязательно.';
-            isValid = false;
-        }
-
-        // Проверка телефона (только цифры, длина от 10 до 11)
-        const phoneRegex = /^\d{10,11}$/;
-        if (!phoneRegex.test(phone)) {
-            document.getElementById('phoneError').textContent = 'Введите корректный телефон (10-11 цифр).';
-            isValid = false;
-        }
-
-        // Проверка email (если заполнено)
-        if (email) {
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(email)) {
-                document.getElementById('emailError').textContent = 'Введите корректный email.';
-                isValid = false;
-            }
-        }
-
-        if (!isValid) {
-            e.preventDefault();
-        }
-    });
-</script>
 
 {% endblock %}

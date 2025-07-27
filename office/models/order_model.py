@@ -4,7 +4,28 @@ from datetime import date, timedelta
 
 
 class OrderModel(models.Model):
-    lead = models.ForeignKey('LeadModel', on_delete=models.PROTECT, verbose_name='Лид')
+
+    contract = models.CharField(
+        max_length=16,
+        db_index=True,
+        unique=True,
+        verbose_name='Номер заказа',
+        blank=False,
+        null=True,
+    )    
+    lead = models.ForeignKey(
+        'LeadModel', 
+        on_delete=models.PROTECT, 
+        verbose_name='Лид',
+        null=True,  # Разрешаем NULL для заказов без лида
+        blank=True
+    )   
+    client_name = models.CharField(
+        max_length=64, 
+        verbose_name='Имя заказчика', 
+        null=True, blank=True
+        ) 
+    delivery_address = models.CharField(max_length=128, verbose_name='Адрес доставки', default='', blank=True)
     contract_date = models.DateField(verbose_name='Дата заключения', null=False, blank=False)
     company = models.ForeignKey('company.CompanyModel', on_delete=models.PROTECT, verbose_name='Компания', default=1)
     product = models.CharField(max_length=30, verbose_name='Наименование')
@@ -34,3 +55,4 @@ class OrderModel(models.Model):
 
     def __str__(self):
         return self.lead.contract
+    

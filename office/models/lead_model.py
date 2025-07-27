@@ -9,14 +9,15 @@ class LeadModel(models.Model):
         CONTRACT = 'CONTRACT', 'Заключен'
         CANCELED = 'CANCELED', 'Отменен'
         WAIT = 'WAIT', 'В ожидании'
+        DONE = 'DONE', 'Выполнен'
 
     contract = models.CharField(max_length=16, unique=True, db_index=True, verbose_name='Номер заказа')
     contact_date = models.DateField(verbose_name='Дата добавления', null=False, blank=False)
     name = models.CharField(max_length=64, verbose_name='ФИО', null=False, blank=False)
     product = models.CharField(max_length=30, verbose_name='Наименование')
-    adress = models.CharField(max_length=128, verbose_name='Адрес доставки')
+    adress = models.CharField(max_length=128, verbose_name='Адрес')
     phone = models.CharField(max_length=11, verbose_name='Телефон')
-    email = models.CharField(max_length=30, verbose_name='E-mail')
+    email = models.EmailField(max_length=30, verbose_name='E-mail', null=True, blank=True)
 
     note = models.CharField(max_length=512, verbose_name='Примечание', null=True, blank=True)
     status = models.CharField(max_length=16, verbose_name='Статус', choices=Status.choices, default=Status.NEW)
