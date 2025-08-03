@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Управление кадрами</title>
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    .card-header {
+      cursor: pointer;
+    }
+
+    .employee-status {
+      font-size: 0.8rem;
+      padding: 0.25rem 0.5rem;
+      border-radius: 1rem;
+    }
+
+    .status-active {
+      background-color: #d1e7dd;
+      color: #0f5132;
+    }
+
+    .status-inactive {
+      background-color: #f8d7da;
+      color: #842029;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container mt-4">
+    <h1 class="text-center mb-4">Управление кадрами</h1>
+
+    <div class="d-flex justify-content-between mb-3">
+      <h2>Сотрудники</h2>
+      <button id="addEmployeeBtn" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#employeeModal">
+        + Добавить сотрудника
+      </button>
+    </div>
+
+    {% for role in roles %}
+    <div class="card mb-4">
+      <div class="card-header bg-primary text-white" data-bs-toggle="collapse" data-bs-target="#role-{{ role.id }}">
+        <h5 class="mb-0">{{ role.title }}</h5>
+      </div>
+      <ul class="list-group list-group-flush collapse show" id="role-{{ role.id }}">
+        {% for employee in role.employees.all %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <div>
+            <div class="fw-bold">{{ employee.last_name }} {{ employee.first_name }}</div>
+            <small class="text-muted">
+              {{ employee.role.title }}
+              {% if employee.email %} | {{ employee.email }}{% endif %}
+              {% if employee.phone %} | +7{{ employee.phone }}{% endif %}
+            </small>
+            <div>
+              <span
+                class="employee-status {% if employee.is_active %}status-active{% else %}status-inactive{% endif %}">
+                {% if employee.is_active %}Работает{% else %}Уволен{% endif %}
+              </span>
+            </div>
+          </div>
+          <div>
+            <button class="btn btn-warning btn-sm me-2 edit-btn" data-employee-id="{{ employee.id }}"
+              data-bs-toggle="modal" data-bs-target="#employeeModal" {% if not employee.is_active %}disabled{% endif %}>
+              Редактировать
+            </button>
+            <form action="{% url 'toggle_employee_status' employee.id %}" method="post" style="display:inline;">
+              {% csrf_token %}
+              <button type="submit"
+                class="btn btn-sm {% if employee.is_active %}btn-danger{% else %}btn-success{% endif %}">
+                {% if employee.is_active %}Уволить{% else %}Восстановить{% endif %}
+              </button>
+            </form>
+          </div>
+        </li>
+        {% empty %}
+        <li class="list-group-item text-center text-muted">
+          Нет сотрудников
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Employee Modal -->
+  <div class="modal fade" id="employeeModal" tabindex="-1" aria-labelledby="employeeModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="employeeModalLabel">Добавить сотрудника</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <form id="employeeForm" method="post" action="{% url 'save_employee' %}">
+          {% csrf_token %}
+          <input type="hidden" id="employeeId" name="employee_id" value="">
+          <div class="modal-body">
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <label for="firstName" class="form-label">Имя <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="firstName" name="first_name" required>
+              </div>
+              <div class="col-md-6">
+                <label for="lastName" class="form-label">Фамилия <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="lastName" name="last_name" required>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label for="role" class="form-label">Должность <span class="text-danger">*</span></label>
+              <select class="form-select" id="role" name="role" required>
+                <option value="">Выберите должность</option>
+                {% for role in roles %}
+                <option value="{{ role.id }}">{{ role.title }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <label for="email" class="form-label">Email</label>
+                <input type="email" class="form-control" id="email" name="email">
+              </div>
+              <div class="col-md-6">
+                <label for="phone" class="form-label">Телефон</label>
+                <div class="input-group">
+                  <span class="input-group-text">+7</span>
+                  <input type="tel" class="form-control" id="phone" name="phone" maxlength="10">
+                </div>
+              </div>
+            </div>
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <label for="telegram" class="form-label">Telegram</label>
+                <div class="input-group">
+                  <span class="input-group-text">@</span>
+                  <input type="text" class="form-control" id="telegram" name="telegram">
+                </div>
+              </div>
+              <div class="col-md-6">
+                <label for="generateAccount" class="form-label">Учетная запись</label>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" id="generateAccount" name="generate_account">
+                  <label class="form-check-label" for="generateAccount">Создать аккаунт</label>
+                </div>
+                <div id="accountFields" style="display: none;">
+                  <div class="mt-2">
+                    <label for="generatedLogin" class="form-label small">Логин</label>
+                    <input type="text" class="form-control form-control-sm" id="generatedLogin" name="generated_login" readonly>
+                  </div>
+                  <div class="mt-1">
+                    <label for="generatedPassword" class="form-label small">Пароль</label>
+                    <input type="text" class="form-control form-control-sm" id="generatedPassword" name="generated_password">
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="mb-3 form-check">
+              <input type="checkbox" class="form-check-input" id="isActive" name="is_active" checked>
+              <label class="form-check-label" for="isActive">Работает в компании</label>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+            <button type="submit" class="btn btn-primary">Сохранить</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap JS Bundle with Popper -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const employeeModal = document.getElementById('employeeModal');
+      const modalTitle = employeeModal.querySelector('.modal-title');
+      const employeeForm = document.getElementById('employeeForm');
+      const employeeIdInput = document.getElementById('employeeId');
+
+      // Обработка открытия модального окна для редактирования
+      document.querySelectorAll('.edit-btn').forEach(btn => {
+        btn.addEventListener('click', async function () {
+          const employeeId = this.getAttribute('data-employee-id');
+          const modalTitle = document.getElementById('employeeModalLabel');
+          const employeeIdInput = document.getElementById('employeeId');
+
+          modalTitle.textContent = 'Редактировать сотрудника';
+          employeeIdInput.value = employeeId;
+
+          try {
+            // Показываем индикатор загрузки
+            const submitBtn = document.querySelector('#employeeModal .modal-footer .btn-primary');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Загрузка...';
+
+            // AJAX-запрос для получения данных
+            const response = await fetch(`/employee/get/${employeeId}/`);
+            const data = await response.json();
+
+            if (data.success) {
+              const employee = data.employee;
+
+              // Заполняем форму данными
+              document.getElementById('firstName').value = employee.first_name || '';
+              document.getElementById('lastName').value = employee.last_name || '';
+              document.getElementById('email').value = employee.email || '';
+              document.getElementById('phone').value = employee.phone || '';
+              document.getElementById('telegram').value = employee.telegram || '';
+              document.getElementById('isActive').checked = employee.is_active;
+
+              // Устанавливаем должность
+              if (employee.role_id) {
+                document.getElementById('role').value = employee.role_id;
+              }
+
+              // Обработка учетной записи
+              const generateAccount = document.getElementById('generateAccount');
+              const accountFields = document.getElementById('accountFields');
+
+              if (employee.has_account) {
+                generateAccount.checked = true;
+                accountFields.style.display = 'block';
+                document.getElementById('generatedLogin').value = 'Уже создан';
+                document.getElementById('generatedPassword').value = '********';
+                generateAccount.disabled = true;
+              } else {
+                generateAccount.checked = false;
+                accountFields.style.display = 'none';
+                generateAccount.disabled = false;
+              }
+            } else {
+              alert('Ошибка загрузки данных: ' + (data.error || 'Неизвестная ошибка'));
+            }
+          } catch (error) {
+            console.error('Ошибка:', error);
+            alert('Ошибка при загрузке данных сотрудника');
+          } finally {
+            // Восстанавливаем кнопку
+            const submitBtn = document.querySelector('#employeeModal .modal-footer .btn-primary');
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Сохранить';
+          }
+        });
+      });
+
+      // Обработка открытия модального окна для добавления
+      employeeModal.addEventListener('show.bs.modal', function (event) {
+        if (!event.relatedTarget || !event.relatedTarget.classList.contains('edit-btn')) {
+          modalTitle.textContent = 'Добавить сотрудника';
+          employeeIdInput.value = '';
+          employeeForm.reset();
+          document.getElementById('isActive').checked = true;
+        }
+      });
+
+      // Валидация телефона
+      document.getElementById('phone').addEventListener('input', function (e) {
+        this.value = this.value.replace(/\D/g, '').substring(0, 10);
+      });
+    });
+    function transliterate(text) {
+      const rus = 'абвгдеёжзийклмнопрстуфхцчшщъыьэюя';
+      const lat = 'a|b|v|g|d|e|e|zh|z|i|j|k|l|m|n|o|p|r|s|t|u|f|kh|ts|ch|sh|sch||y||e|yu|ya'.split('|');
+      
+      return text.split('').map(char => {
+        const index = rus.indexOf(char.toLowerCase());
+        return index >= 0 ? lat[index] : char;
+      }).join('');
+    }
+
+    // Добавить в конец скрипта
+    document.getElementById('generateAccount').addEventListener('change', function () {
+      const accountFields = document.getElementById('accountFields');
+      accountFields.style.display = this.checked ? 'block' : 'none';
+
+      if (this.checked) {
+        const firstName = document.getElementById('firstName').value.trim().toLowerCase();
+        const lastName = document.getElementById('lastName').value.trim().toLowerCase();
+
+        if (firstName && lastName) {
+          // Генерация логина (первые буквы имени + фамилия)
+          const login = (firstName[0] + '_' + lastName).slice(0, 15);
+          document.getElementById('generatedLogin').value = transliterate(login);
+
+          // Генерация случайного пароля
+          const password = Math.random().toString(36).slice(-8);
+          document.getElementById('generatedPassword').value = password;
+        }
+      }
+    });
+
+    // Обновлять логин при изменении имени/фамилии
+    document.getElementById('firstName').addEventListener('input', updateGeneratedCredentials);
+    document.getElementById('lastName').addEventListener('input', updateGeneratedCredentials);
+
+
+    function updateGeneratedCredentials() {
+
+
+      if (document.getElementById('generateAccount').checked) {
+        const firstName = document.getElementById('firstName').value.trim().toLowerCase();
+        const lastName = document.getElementById('lastName').value.trim().toLowerCase();
+
+        if (firstName && lastName) {
+          const login = (firstName[0] + '_' + lastName).slice(0, 15);
+          console.log(login);
+          
+          document.getElementById('generatedLogin').value = transliterate(login);
+        }
+      }
+    }
+
+
+    document.getElementById('employeeForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+
+      const formData = new FormData(this);
+      fetch(this.action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            const modal = bootstrap.Modal.getInstance(document.getElementById('employeeModal'));
+            modal.hide();
+
+            if (data.login && data.password) {
+              alert(`Учетная запись создана!\nЛогин: ${data.login}\nПароль: ${data.password}`);
+            }
+            location.reload(); // Обновляем страницу
+          } else {
+            alert('Ошибка: ' + (data.error || 'Неизвестная ошибка'));
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          alert('Ошибка при сохранении');
+        });
+    });
+
+
+  </script>
+</body>
+
+</html>

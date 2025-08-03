@@ -1,5 +1,6 @@
 # employees/models.py
 from django.db import models
+from django.contrib.auth.models import User
 
 class RoleModel(models.Model):
     
@@ -20,15 +21,14 @@ class EmployeeModel(models.Model):
     role = models.ForeignKey(RoleModel, on_delete=models.PROTECT, verbose_name="Должность", related_name='employees',)
     email = models.EmailField(verbose_name="E-mail", blank=True)
     phone = models.CharField(verbose_name="Телефон", max_length=20, blank=True)
+    tg_nickname = models.CharField(max_length=50,null=True, blank=True)
     is_active = models.BooleanField(verbose_name="Работает ли в компании", default=True)
-    user_profile = models.OneToOneField(
-        'accounts.UserProfileModel',
-        on_delete=models.SET_NULL,
+    user = models.OneToOneField(User, 
+        on_delete=models.CASCADE, 
+        verbose_name="Профиль пользователя",
         null=True,
-        blank=True,
-        related_name='employee',
-        verbose_name="Профиль пользователя"
-    )
+        blank=True
+)
     
     class Meta:
         verbose_name = "Сотрудник"
