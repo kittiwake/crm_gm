@@ -187,3 +187,5 @@ class CreateOrder(CreateView):
             print("Error:", e)
             return self.form_invalid(form)
 
+class LeadCalendarView(View):
+    pass

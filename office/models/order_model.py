@@ -17,7 +17,7 @@ class OrderModel(models.Model):
         'LeadModel', 
         on_delete=models.PROTECT, 
         verbose_name='Лид',
-        null=True,  # Разрешаем NULL для заказов без лида
+        null=True,
         blank=True
     )   
     client_name = models.CharField(
@@ -51,8 +51,8 @@ class OrderModel(models.Model):
     class Meta:
         verbose_name = 'Заказ'
         verbose_name_plural = 'Заказы'
-        ordering = ['lead']
+        ordering = ['contract']
 
     def __str__(self):
-        return self.lead.contract
+        return self.contract
     

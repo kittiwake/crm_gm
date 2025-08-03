@@ -4,18 +4,27 @@
 <div class="sidebar-container" style='background-color: #f5f5f5;'>
     <h2>Лист ожидания</h2>
     {% for order in orders_without_plan %}
-    <div class="waiting-order">
+    <div class="row">
+    <div class="waiting-order col-sm-6">
         <a href="{% url 'order' order.id %}">
-            {{ order.lead.contract }}
+            {{ order.contract }}
         </a>
+    </div>
+    <div class="col-sm-2">
+        {{ order.term|date:"d.m" }}
+    </div>
+    <div class="col-sm-4">
+        {{ order.sum}}
+    </div>
     </div>
     {% endfor %}
     {% for plan in waiting_orders %}
     <div class="waiting-order">
         <a href="{% url 'order' plan.order.id %}">
-            {{ plan.order.lead.contract }}
+            {{ plan.order.contract }}
         </a>
     </div>
+    
     {% endfor %}
 </div>
 <style>

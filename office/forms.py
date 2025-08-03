@@ -1,9 +1,10 @@
 from django import forms
 
+from company.models import CompanyModel
 from office.models.lead_model import LeadModel
 from office.models.order_model import OrderModel
 
-from django.forms import DateInput, NumberInput, TextInput, CheckboxInput, Select
+from django.forms import DateInput, NumberInput, TextInput, CheckboxInput, Select, ValidationError
 from datetime import date, timedelta, timezone
 
 
@@ -52,29 +53,20 @@ class LeadForm(forms.ModelForm):
         return phone
 
 
-# class OrderForm(forms.ModelForm):
-#     def __init__(self, *args, **kwargs):
-#         lead_id = kwargs.pop('lead_id', None)
-#         super().__init__(*args, **kwargs)
-        
-#         if lead_id:
-#             try:
-#                 lead = LeadModel.objects.get(pk=lead_id)
-#                 self.fields['product'].initial = lead.product
-#                 self.fields['phone'].initial = lead.phone
-#                 self.fields['email'].initial = lead.email
-#             except LeadModel.DoesNotExist:
-#                 pass
-
-
 class OrderForm(forms.ModelForm):
+
+    company = forms.ModelChoiceField(
+        queryset=CompanyModel.objects.filter(is_active=True),
+        widget=forms.RadioSelect(attrs={'class': 'btn-check'}),
+        empty_label=None
+    )
     class Meta:
         model = OrderModel
         fields = '__all__'
         widgets = {
+            'company': forms.RadioSelect(),
             'contract': TextInput(attrs={
                 'class': 'form-control',
-                'placeholder': 'Автоматическая генерация'
             }),
             'contract_date': DateInput(attrs={
                 'type': 'date',
@@ -146,6 +138,8 @@ class OrderForm(forms.ModelForm):
         self.fields['add_date'].initial = date.today()
         self.fields['term'].initial = (date.today() + timedelta(weeks=4)).strftime('%Y-%m-%d')
         self.fields['personal_agree'].initial = False
+        active_companies = CompanyModel.objects.filter(is_active=True)
+        self.fields['company'].queryset = active_companies
         
         # Обработка привязки к лиду
         if lead_id:
@@ -158,6 +152,7 @@ class OrderForm(forms.ModelForm):
                 self.fields['phone'].initial = lead.phone
                 self.fields['email'].initial = lead.email
                 self.fields['lead'].initial = lead.id
+                self.fields['company'].initial = active_companies.first().id
                 # Делаем поля из лида только для чтения
                 self.fields['contract'].widget.attrs['readonly'] = True
             except LeadModel.DoesNotExist:
@@ -168,11 +163,18 @@ class OrderForm(forms.ModelForm):
 
         # Настройка скрытых полей
         self.fields['lead'].widget = forms.HiddenInput()
-        self.fields['company'].widget = forms.HiddenInput()
-        self.fields['company'].initial = 1
         
         # Дополнительные настройки полей
         self.fields['email'].required = False
         self.fields['note'].required = False
         self.fields['personal_agree'].required = False
         self.fields['add_date'].required = False
+
+
+    def clean_phone(self):
+        phone = self.cleaned_data['phone']
+        if not phone.isdigit():
+            raise ValidationError("Телефон должен содержать только цифры")
+        if len(phone) != 10:
+            raise ValidationError("Телефон должен содержать 10 цифр")
+        return phone

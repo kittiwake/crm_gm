@@ -3,21 +3,21 @@
 
 {% block sidebar %}
 <div class="sidebar-container" style='background-color: #f5f5f5;'>
-    <!-- Список лидов со статусом "Заключен" -->
-    <div class="col-md-12">
-        <h4>Заключеные договора:</h4>
-        <ul class="list-group">
-            {% for lead in completed_leads %}
-            <li class="list-group-item">
-                <a href="{% url 'create_order_from_lead' lead_id=lead.id %}">
-                    {{ lead.contract }}
-                </a>
-            </li>
-            {% empty %}
-            <li class="list-group-item">Нет</li>
-            {% endfor %}
-        </ul>
-    </div>
+  <!-- Список лидов со статусом "Заключен" -->
+  <div class="col-md-12">
+    <h4>Заключеные договора:</h4>
+    <ul class="list-group">
+      {% for lead in completed_leads %}
+      <li class="list-group-item">
+        <a href="{% url 'create_order_from_lead' lead_id=lead.id %}">
+          {{ lead.contract }}
+        </a>
+      </li>
+      {% empty %}
+      <li class="list-group-item">Нет</li>
+      {% endfor %}
+    </ul>
+  </div>
 </div>
 {% endblock sidebar %}
 
@@ -26,137 +26,227 @@
 
 <div class="container">
 
-<form method="post" class="needs-validation" novalidate>
-  {% csrf_token %}
-  
-  <!-- Скрытые поля -->
-  {{ form.lead }}
-  {{ form.company }}
-  
-  <div class="row g-3">
-    <!-- Левая колонка -->
-    <div class="col-md-6">
-      <!-- Номер заказа -->
-      <div class="mb-3">
-        <label for="{{ form.contract.id_for_label }}" class="form-label">
-          {{ form.contract.label }}
-          {% if not form.lead.value %}<span class="text-muted"> (автогенерация)</span>{% endif %}
-        </label>
-        {{ form.contract }}
-        <div class="invalid-feedback">
-          {{ form.contract.errors }}
-        </div>
-      </div>
-      
-      <!-- Имя заказчика -->
-      <div class="mb-3">
-        <label for="client_name" class="form-label">Имя заказчика</label>
-        {{ form.client_name }}
-               
-      </div>
+  <form method="post" class="needs-validation" novalidate>
+    {% csrf_token %}
 
-    <!-- Продукт -->
-      <div class="mb-3">
-        <label for="{{ form.product.id_for_label }}" class="form-label">{{ form.product.label }}</label>
-        {{ form.product }}
-      </div>
+    <!-- Скрытые поля -->
+    {{ form.lead }}
+    <div class="btn-group mb-3" role="group" aria-label="Выбор компании">
+    {% for company_id, company_name in form.company.field.choices %}
+      <input type="radio" class="btn-check" name="company" 
+            id="company_{{ company_id }}" value="{{ company_id }}"
+            {% if form.company.value|stringformat:"s" == company_id|stringformat:"s" %}checked{% endif %}>
+      <label class="btn btn-outline-primary" for="company_{{ company_id }}">
+        {{ company_name }}
+      </label>
+    {% endfor %}
 
-      <!-- Адрес доставки -->
-      <div class="mb-3">
-        <label for="delivery_address" class="form-label">Адрес доставки</label>
-        {{ form.delivery_address }}
+      {% if form.company.errors %}
+      <div class="invalid-feedback d-block">
+        {% for error in form.company.errors %}
+        {{ error }}
+        {% endfor %}
       </div>
-      
+      {% endif %}
+
     </div>
-    
-    <!-- Правая колонка -->
-    <div class="col-md-6">
-      <!-- Даты -->
-      <div class="row mb-3">
-        <div class="col-md-6">
-          <label for="{{ form.contract_date.id_for_label }}" class="form-label">{{ form.contract_date.label }}</label>
-          {{ form.contract_date }}
-        </div>
-        <div class="col-md-6">
-          <label for="{{ form.term.id_for_label }}" class="form-label">{{ form.term.label }}</label>
-          {{ form.term }}
-        </div>
-      </div>
-      <!-- Контакты -->
-      <div class="row mb-3">
-        <div class="col-md-6">
-          <label for="{{ form.phone.id_for_label }}" class="form-label">{{ form.phone.label }}</label>
-          {{ form.phone }}
-        </div>
-        <div class="col-md-6">
-          <label for="{{ form.email.id_for_label }}" class="form-label">{{ form.email.label }}</label>
-          {{ form.email }}
-        </div>
-      </div>
-      
-      <!-- Финансовые поля -->
-      <div class="row mb-3">
-        <div class="col-md-4">
-          <label for="{{ form.sum.id_for_label }}" class="form-label">{{ form.sum.label }}</label>
-          {{ form.sum }}
-        </div>
-        <div class="col-md-4">
-          <label for="{{ form.prepayment.id_for_label }}" class="form-label">{{ form.prepayment.label }}</label>
-          {{ form.prepayment }}
-        </div>
-        <div class="col-md-4">
-          <label for="{{ form.rebate.id_for_label }}" class="form-label">{{ form.rebate.label }}</label>
-          {{ form.rebate }}
-        </div>
-      </div>
-      
-      <!-- Дополнительные суммы -->
-      <div class="row mb-3">
-        <div class="col-md-6">
-          <label for="{{ form.sumdeliv.id_for_label }}" class="form-label">{{ form.sumdeliv.label }}</label>
-          {{ form.sumdeliv }}
-        </div>
-        <div class="col-md-6">
-          <label for="{{ form.sumcollect.id_for_label }}" class="form-label">{{ form.sumcollect.label }}</label>
-          {{ form.sumcollect }}
-        </div>
-      </div>
-    </div>
-    
-    
-    <!-- Примечание (textarea) -->
-    <div class="col-12">
-      <div class="mb-3">
-        <label for="{{ form.note.id_for_label }}" class="form-label">{{ form.note.label }}</label>
-        <textarea class="form-control" id="{{ form.note.id_for_label }}" name="{{ form.note.name }}" 
-                  rows="3">{% if form.note.value %}{{ form.note.value }}{% endif %}</textarea>
-      </div>
-    </div>
-    
-    <!-- Опции и кнопка -->
-    <div class="col-12">
-      <div class="d-flex justify-content-between align-items-center">
-        <div>
-          <div class="form-check form-switch d-inline-block me-3">
-            {{ form.rassr }}
-            <label class="form-check-label" for="{{ form.rassr.id_for_label }}">{{ form.rassr.label }}</label>
+
+    <div class="row g-3">
+      <!-- Левая колонка -->
+      <div class="col-md-6">
+        <!-- Номер заказа -->
+        <div class="mb-3">
+          <label for="{{ form.contract.id_for_label }}" class="form-label">
+            {{ form.contract.label }}
+          </label>
+          {{ form.contract }}
+          {% if form.contract.errors %}
+          <div class="invalid-feedback d-block">
+            {% for error in form.contract.errors %}
+            {{ error }}
+            {% endfor %}
           </div>
-          <div class="form-check form-switch d-inline-block me-3">
-            {{ form.beznal }}
-            <label class="form-check-label" for="{{ form.beznal.id_for_label }}">{{ form.beznal.label }}</label>
+          {% endif %}
+        </div>
+
+        <!-- Имя заказчика -->
+        <div class="mb-3">
+          <label for="client_name" class="form-label">Имя заказчика</label>
+          {{ form.client_name }}
+          {% if form.client_name.errors %}
+          <div class="invalid-feedback d-block">
+            {% for error in form.client_name.errors %}
+            {{ error }}
+            {% endfor %}
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Продукт -->
+        <div class="mb-3">
+          <label for="{{ form.product.id_for_label }}" class="form-label">{{ form.product.label }}</label>
+          {{ form.product }}
+        </div>
+
+        <!-- Адрес доставки -->
+        <div class="mb-3">
+          <label for="delivery_address" class="form-label">Адрес доставки</label>
+          {{ form.delivery_address }}
+        </div>
+
+      </div>
+
+      <!-- Правая колонка -->
+      <div class="col-md-6">
+        <!-- Даты -->
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <label for="{{ form.contract_date.id_for_label }}" class="form-label">{{ form.contract_date.label }}</label>
+            {{ form.contract_date }}
+            {% if form.contract_date.errors %}
+            <div class="invalid-feedback d-block">
+              {% for error in form.contract_date.errors %}
+              {{ error }}
+              {% endfor %}
+            </div>
+            {% endif %}
+          </div>
+          <div class="col-md-6">
+            <label for="{{ form.term.id_for_label }}" class="form-label">{{ form.term.label }}</label>
+            {{ form.term }}
+            {% if form.term.errors %}
+            <div class="invalid-feedback d-block">
+              {% for error in form.term.errors %}
+              {{ error }}
+              {% endfor %}
+            </div>
+            {% endif %}
           </div>
         </div>
-        
-        <button type="submit" class="btn btn-primary px-4">
-          <i class="bi bi-save me-2"></i>
-          Сохранить заказ
-        </button>
+        <!-- Контакты -->
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <label for="{{ form.phone.id_for_label }}" class="form-label">{{ form.phone.label }}</label>
+            {{ form.phone }}
+            {% if form.phone.errors %}
+            <div class="invalid-feedback d-block">
+              {% for error in form.phone.errors %}
+              {{ error }}
+              {% endfor %}
+            </div>
+            {% endif %}
+          </div>
+          <div class="col-md-6">
+            <label for="{{ form.email.id_for_label }}" class="form-label">{{ form.email.label }}</label>
+            {{ form.email }}
+            {% if form.email.errors %}
+            <div class="invalid-feedback d-block">
+              {% for error in form.email.errors %}
+              {{ error }}
+              {% endfor %}
+            </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Финансовые поля -->
+        <div class="row mb-3">
+          <div class="col-md-4">
+            <label for="{{ form.sum.id_for_label }}" class="form-label">{{ form.sum.label }}</label>
+            {{ form.sum }}
+            {% if form.sum.errors %}
+            <div class="invalid-feedback d-block">
+              {% for error in form.sum.errors %}
+              {{ error }}
+              {% endfor %}
+            </div>
+            {% endif %}
+          </div>
+          <div class="col-md-4">
+            <label for="{{ form.prepayment.id_for_label }}" class="form-label">{{ form.prepayment.label }}</label>
+            {{ form.prepayment }}
+            {% if form.prepayment.errors %}
+            <div class="invalid-feedback d-block">
+              {% for error in form.prepayment.errors %}
+              {{ error }}
+              {% endfor %}
+            </div>
+            {% endif %}
+          </div>
+          <div class="col-md-4">
+            <label for="{{ form.rebate.id_for_label }}" class="form-label">{{ form.rebate.label }}</label>
+            {{ form.rebate }}
+            {% if form.rebate.errors %}
+            <div class="invalid-feedback d-block">
+              {% for error in form.rebate.errors %}
+              {{ error }}
+              {% endfor %}
+            </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Дополнительные суммы -->
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <label for="{{ form.sumdeliv.id_for_label }}" class="form-label">{{ form.sumdeliv.label }}</label>
+            {{ form.sumdeliv }}
+            {% if form.sumdeliv.errors %}
+            <div class="invalid-feedback d-block">
+              {% for error in form.sumdeliv.errors %}
+              {{ error }}
+              {% endfor %}
+            </div>
+            {% endif %}
+          </div>
+          <div class="col-md-6">
+            <label for="{{ form.sumcollect.id_for_label }}" class="form-label">{{ form.sumcollect.label }}</label>
+            {{ form.sumcollect }}
+            {% if form.sumcollect.errors %}
+            <div class="invalid-feedback d-block">
+              {% for error in form.sumcollect.errors %}
+              {{ error }}
+              {% endfor %}
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+
+      <!-- Примечание (textarea) -->
+      <div class="col-12">
+        <div class="mb-3">
+          <label for="{{ form.note.id_for_label }}" class="form-label">{{ form.note.label }}</label>
+          <textarea class="form-control" id="{{ form.note.id_for_label }}" name="{{ form.note.name }}"
+            rows="3">{% if form.note.value %}{{ form.note.value }}{% endif %}</textarea>
+        </div>
+      </div>
+
+      <!-- Опции и кнопка -->
+      <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <div class="form-check form-switch d-inline-block me-3">
+              {{ form.rassr }}
+              <label class="form-check-label" for="{{ form.rassr.id_for_label }}">{{ form.rassr.label }}</label>
+            </div>
+            <div class="form-check form-switch d-inline-block me-3">
+              {{ form.beznal }}
+              <label class="form-check-label" for="{{ form.beznal.id_for_label }}">{{ form.beznal.label }}</label>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary px-4">
+            <i class="bi bi-save me-2"></i>
+            Сохранить заказ
+          </button>
+        </div>
       </div>
     </div>
-  </div>
-</form>
+  </form>
 
 
-    
+
 </div>
 {% endblock %}

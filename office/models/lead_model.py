@@ -2,6 +2,7 @@ from django.db import models
 # from django.contrib.auth.models import User
 from datetime import date, timedelta
 
+
 class LeadModel(models.Model):
     class Status(models.TextChoices):
         NEW = 'NEW', 'Новый'

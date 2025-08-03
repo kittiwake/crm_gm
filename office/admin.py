@@ -5,10 +5,10 @@ from .models.order_model import OrderModel
 
 @admin.register(OrderModel)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ('lead', 'company', 'term', 'sum', 'prepayment', 'rassr', 'beznal', 'rebate')
+    list_display = ('contract', 'company', 'term', 'sum', 'prepayment', 'rassr', 'beznal', 'rebate')
     list_filter = ('company', 'rassr', 'beznal')
-    search_fields = ('lead',)
-    ordering = ['term', 'lead']
+    search_fields = ('contract',)
+    ordering = ['term', 'contract']
     list_editable = ('rassr', 'beznal')
 
 @admin.register(LeadModel)
