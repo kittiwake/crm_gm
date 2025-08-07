@@ -1,6 +1,7 @@
 from django.db import models
 # from django.contrib.auth.models import User
 from datetime import date, timedelta
+from django.core.exceptions import ValidationError
 
 
 class LeadModel(models.Model):
@@ -31,3 +32,12 @@ class LeadModel(models.Model):
 
     def __str__(self):
         return self.contract
+    
+    def clean(self):
+        if self.status == self.Status.IN_WORK and (not self.manager or self.manager.role.title != 'Дизайнер'):
+            raise ValidationError('Для перевода в статус "В обработке" необходимо назначить дизайнера')
+        super().clean()
+    
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)

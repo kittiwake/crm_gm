@@ -29,6 +29,7 @@ urlpatterns = [
     path('create-order/', CreateOrder.as_view(), name='create_order'),  # Без лида
     path('create-order/<int:lead_id>/', CreateOrder.as_view(), name='create_order_from_lead'),     
     path('employee/', include('employees.urls')),
+    path('office/', include('office.urls')),
 ]
 
 if settings.DEBUG:

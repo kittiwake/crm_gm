@@ -1,17 +1,20 @@
 import json
+from django.core.exceptions import ValidationError
 from django.http import JsonResponse
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.utils import timezone
 from datetime import datetime, timedelta
 from django.db import transaction
+from django.contrib import messages
 
 from django.views import View
 
+from employees.models import EmployeeModel
 from office.forms import LeadForm, OrderForm
 from office.models.lead_model import LeadModel
 from plan.models import PlanModel
-from .models.order_model import OrderModel
+from office.models.order_model import OrderModel
 
 
 class Timetable(View):
@@ -123,7 +126,7 @@ class CreateLead(CreateView):
     model = LeadModel
     form_class = LeadForm
     template_name = 'add_lead.html'
-    success_url = reverse_lazy('create_lead')
+    success_url = reverse_lazy('office:kanban')
 
     def form_valid(self, form):
         # Устанавливаем текущую дату перед сохранением
@@ -187,5 +190,85 @@ class CreateOrder(CreateView):
             print("Error:", e)
             return self.form_invalid(form)
 
-class LeadCalendarView(View):
-    pass
+
+# leads/views.py
+from django.views.generic import TemplateView
+from employees.models import EmployeeModel
+
+class KanbanBoardView(TemplateView):
+    template_name = 'kanban.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Получаем все лиды с менеджерами
+        leads = LeadModel.objects.select_related('manager')
+        
+        # Группируем лиды по статусам
+        status_groups = {
+            'NEW': {
+                'leads': leads.filter(status='NEW'),
+                'title': 'Новый',
+                'color': 'danger',
+                'icon': 'fa-plus-circle'
+            },
+            'IN_WORK': {
+                'leads': leads.filter(status='IN_WORK'),
+                'title': 'В обработке',
+                'color': 'warning',
+                'icon': 'fa-spinner'
+            },
+            'WAIT': {
+                'leads': leads.filter(status='WAIT'),
+                'title': 'В ожидании',
+                'color': 'info',
+                'icon': 'fa-clock'
+            },
+            'CONTRACT': {
+                'leads': leads.filter(status='CONTRACT'),
+                'title': 'Заключен',
+                'color': 'success',
+                'icon': 'fa-check-circle'
+            },
+            'DONE': {
+                'leads': leads.filter(status='DONE'),
+                'title': 'Выполнен',
+                'color': 'success',
+                'icon': 'fa-flag-checkered'
+            },
+            'CANCELED': {
+                'leads': leads.filter(status='CANCELED'),
+                'title': 'Отменен',
+                'color': 'danger',
+                'icon': 'fa-times-circle'
+            }
+        }
+        
+        context.update({
+            'status_groups': status_groups,
+            'designers': EmployeeModel.objects.filter(role__title='Дизайнер'),
+            'Status': LeadModel.Status  # Для доступа к choices в шаблоне
+        })
+        context['hide_sidebar'] = True
+        return context
+    
+def change_lead_status(request, lead_id, new_status):
+    lead = get_object_or_404(LeadModel, pk=lead_id)
+    
+    if new_status == LeadModel.Status.IN_WORK:
+        # Проверяем, назначен ли дизайнер
+        if not request.POST.get('designer_id'):
+            messages.error(request, 'Для перевода в обработку необходимо назначить дизайнера')
+            return redirect('office:kanban')
+        
+        designer = get_object_or_404(EmployeeModel, pk=request.POST['designer_id'], role__title='Дизайнер')
+        lead.manager = designer
+    
+    try:
+        lead.status = new_status
+        lead.save()
+        messages.success(request, 'Статус лида успешно обновлен')
+    except ValidationError as e:
+        messages.error(request, str(e))
+    
+    return redirect('office:kanban')
