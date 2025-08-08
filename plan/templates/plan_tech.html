@@ -1,0 +1,335 @@
+{% extends "base.html" %}
+
+{% block sidebar %}
+
+<style>
+
+        #sidebar {
+            height: 100vh;
+            background-color: #f8f9fa;
+            border-right: 1px solid #dee2e6;
+            padding: 15px;
+            overflow-y: auto;
+        }
+        .order-item {
+            padding: 10px;
+            margin-bottom: 5px;
+            background-color: #e9ecef;
+            border-radius: 4px;
+            cursor: grab;
+            transition: all 0.2s;
+            user-select: none;
+        }
+        .order-item:hover {
+            background-color: #dee2e6;
+            transform: translateY(-2px);
+        }
+        .kanban-container {
+            overflow-x: auto;
+            margin-top: 20px;
+        }
+        .kanban-header {
+            display: flex;
+            min-width: 800px;
+        }
+        .constructor-header {
+            flex: 1;
+            min-width: 120px;  /* Минимальная ширина */
+            max-width: 150px;  /* Максимальная ширина */
+            background-color: #f1f3f5;
+            padding: 10px;
+            text-align: center;
+            font-weight: bold;
+            border: 1px solid #dee2e6;
+            border-right: none;
+        }
+        .constructor-header:first-child {
+            position: sticky;
+            left: 0;
+            z-index: 10;
+            border-left: 1px solid #dee2e6;
+        }
+        .kanban-body {
+            min-width: 800px;
+        }
+        .date-row {
+            display: flex;
+            min-height: 100px;
+        }
+        .date-cell {
+            flex: 1;
+            min-width: 120px;  /* Минимальная ширина */
+            max-width: 150px;  /* Максимальная ширина */
+            background-color: #f8f9fa;
+            padding: 10px;
+            border: 1px solid #dee2e6;
+            border-top: none;
+            border-right: none;
+        }
+        .date-cell:first-child {
+            position: sticky;
+            left: 0;
+            z-index: 9;
+            background-color: #e9ecef;
+            font-weight: bold;
+            border-left: 1px solid #dee2e6;
+            text-align: center;
+        }
+        .weekend {
+            background-color: #f1f1f1 !important;
+            color: #6c757d;
+        }
+        .task-card {
+            background-color: white;
+            padding: 8px;
+            margin: 2px 0;
+            border-radius: 4px;
+            border-left: 3px solid #0d6efd;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            cursor: move;
+            font-size: 0.9rem;
+            user-select: none;
+        }
+        .task-card.assigned {
+            border-left-color: #198754;
+        }
+        .task-card .constructor {
+            font-size: 0.8rem;
+            color: #6c757d;
+            margin-top: 3px;
+        }
+        .no-drag {
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+        .status-NEW { background-color: #f8f9fa; }
+        .status-IN_WORK { background-color: #fff3cd; }
+        .status-DONE { background-color: #d1e7dd; }
+        .status-CANCELED { background-color: #f8d7da; }
+    </style>
+    <!-- Сайдбар с заказами -->
+    <div id="sidebar">
+        <h5 >Доступные заказы</h5>
+        <div id="orders-list">
+            {% for order in available_orders %}
+                <div class="order-item" data-order-id="{{ order.id }}" draggable="true">
+                    {{ order.contract }}<br>
+                </div>
+            {% empty %}
+                <div class="text-muted">Нет доступных заказов</div>
+            {% endfor %}
+        </div>
+    </div>
+{% endblock sidebar%} 
+{% block content %}
+    <!-- Основное содержимое -->
+    <div id="content">
+        <h2>План конструкторов</h2>
+        <p class="text-muted">Перетащите заказ из сайдбара в нужную ячейку календаря</p>
+        
+        <!-- Канбан доска (столбцы - конструкторы, строки - даты) -->
+        <div class="kanban-container">
+            <!-- Заголовок с именами конструкторов -->
+            <div class="kanban-header" id="kanban-header">
+                <div class="constructor-header">Дата</div>
+                {% for constructor in constructors %}
+                    <div class="constructor-header" data-constructor-id="{{ constructor.id }}">
+                        {{ constructor.last_name }}
+                    </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Тело доски с датами -->
+            <div class="kanban-body" id="kanban-body">
+                {% for day in work_days %}
+                    {% with day_of_week=day|date:"D" day_date=day|date:"d.m" %}
+                    <div class="date-row">
+                        <!-- Ячейка с датой -->
+                        <div class="date-cell {% if day_of_week == 'Sat' or day_of_week == 'Sun' %}weekend{% endif %}">
+                            <strong>{{ day|date:"D" }}</strong><br>
+                            <small>{{ day|date:"d.m" }}</small>
+                        </div>
+                        
+                        <!-- Ячейки для каждого конструктора -->
+                        {% for constructor in constructors %}
+                            <div class="date-cell {% if day_of_week == 'Sat' or day_of_week == 'Sun' %}weekend no-drag{% endif %}"
+                                 data-constructor="{{ constructor.id }}"
+                                 data-date="{{ day|date:'Y-m-d' }}"
+                                 data-day-name="{{ day|date:'D' }}">
+                                <div class="task-container">
+                                    {% for assignment in current_assignments %}
+                                        {% if assignment.employee_id == constructor.id and assignment.date == day %}
+                                            <div class="task-card status-{{ assignment.status }}"
+                                                 data-order-id="{{ assignment.order.id }}"
+                                                 data-assignment-id="{{ assignment.id }}"
+                                                 draggable="true">
+                                                {{ assignment.order.contract }}
+                                            </div>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    {% endwith %}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Рассчитываем ширину столбца на основе количества конструкторов
+            const constructors = document.querySelectorAll('.constructor-header:not(:first-child)');
+            
+           
+            // Сделать заказы перетаскиваемыми
+            document.querySelectorAll('.order-item').forEach(item => {
+                item.addEventListener('dragstart', function(e) {
+                    e.dataTransfer.setData('text/plain', `order-${this.dataset.orderId}`);
+                    e.dataTransfer.effectAllowed = 'move';
+                    
+                    setTimeout(() => {
+                        this.classList.add('opacity-50');
+                    }, 0);
+                });
+                
+                item.addEventListener('dragend', function() {
+                    this.classList.remove('opacity-50');
+                });
+            });
+            
+            // Сделать задачи перетаскиваемыми
+            document.querySelectorAll('.task-card').forEach(item => {
+                item.addEventListener('dragstart', function(e) {
+                    e.dataTransfer.setData('text/plain', `assignment-${this.dataset.assignmentId}`);
+                    e.dataTransfer.effectAllowed = 'move';
+                    
+                    setTimeout(() => {
+                        this.classList.add('opacity-50');
+                    }, 0);
+                });
+                
+                item.addEventListener('dragend', function() {
+                    this.classList.remove('opacity-50');
+                });
+            });
+            
+            // Сделать ячейки календаря приемниками
+            document.querySelectorAll('.date-cell:not(.weekend)').forEach(cell => {
+                cell.addEventListener('dragover', function(e) {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'move';
+                    this.style.backgroundColor = '#e7f3ff';
+                });
+                
+                cell.addEventListener('dragleave', function() {
+                    this.style.backgroundColor = '';
+                });
+                
+                cell.addEventListener('drop', function(e) {
+                    e.preventDefault();
+                    this.style.backgroundColor = '';
+                    
+                    const data = e.dataTransfer.getData('text/plain');
+                    const taskContainer = this.querySelector('.task-container');
+                    
+                    if (data.startsWith('order-')) {
+                        // Новое назначение
+                        const orderId = data.replace('order-', '');
+                        const constructorId = this.dataset.constructor;
+                        const date = this.dataset.date;
+                        
+                        // Отправляем данные на сервер
+                        fetch('{% url "assign_order" %}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': '{{ csrf_token }}'
+                            },
+                            body: JSON.stringify({
+                                order_id: orderId,
+                                constructor_id: constructorId,
+                                date: date,
+                                status: 'IN_WORK'
+                            })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                // Обновляем интерфейс
+                                const orderItem = document.querySelector(`.order-item[data-order-id="${orderId}"]`);
+                                if (orderItem) orderItem.remove();
+                                
+                                // Добавляем новую задачу
+                                const dayName = this.dataset.dayName;
+                                const dateObj = new Date(date);
+                                const formattedDate = `${String(dateObj.getDate()).padStart(2, '0')}.${String(dateObj.getMonth() + 1).padStart(2, '0')}.${dateObj.getFullYear()}`;
+                                
+                                const task = document.createElement('div');
+                                task.className = 'task-card status-NEW';
+                                task.dataset.orderId = orderId;
+                                task.dataset.assignmentId = data.assignment_id;
+                                task.setAttribute('draggable', 'true');
+                                
+                                task.innerHTML = `
+                                    ${data.order_number}
+                                `;
+                                
+                                task.addEventListener('dragstart', function(e) {
+                                    e.dataTransfer.setData('text/plain', `assignment-${this.dataset.assignmentId}`);
+                                    e.dataTransfer.effectAllowed = 'move';
+                                    setTimeout(() => {
+                                        this.classList.add('opacity-50');
+                                    }, 0);
+                                });
+                                
+                                task.addEventListener('dragend', function() {
+                                    this.classList.remove('opacity-50');
+                                });
+                                
+                                taskContainer.appendChild(task);
+                            }
+                        });
+                    }
+                    else if (data.startsWith('assignment-')) {
+                        // Перемещение существующего назначения
+                        const assignmentId = data.replace('assignment-', '');
+                        const newConstructorId = this.dataset.constructor;
+                        const newDate = this.dataset.date;
+                        
+                        // Отправляем данные на сервер
+                        fetch('{% url "move_assignment" %}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': '{{ csrf_token }}'
+                            },
+                            body: JSON.stringify({
+                                assignment_id: assignmentId,
+                                constructor_id: newConstructorId,
+                                date: newDate
+                            })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                // Обновляем интерфейс
+                                const task = document.querySelector(`.task-card[data-assignment-id="${assignmentId}"]`);
+                                if (task) {
+                                    const dayName = this.dataset.dayName;
+                                    const dateObj = new Date(newDate);
+                                    const formattedDate = `${String(dateObj.getDate()).padStart(2, '0')}.${String(dateObj.getMonth() + 1).padStart(2, '0')}.${dateObj.getFullYear()}`;
+                                                                       
+                                    taskContainer.appendChild(task);
+                                }
+                            }
+                        });
+                    }
+                });
+            });
+            
+        });
+    </script>
+{% endblock %}
