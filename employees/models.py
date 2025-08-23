@@ -27,7 +27,8 @@ class EmployeeModel(models.Model):
         on_delete=models.CASCADE, 
         verbose_name="Профиль пользователя",
         null=True,
-        blank=True
+        blank=True,
+        related_name='employee'
 )
     
     class Meta:
