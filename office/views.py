@@ -7,20 +7,22 @@ from django.utils import timezone
 from datetime import datetime, timedelta
 from django.db import transaction
 from django.contrib import messages
-
 from django.views import View
 
 from employees.models import EmployeeModel
+from myauth.mixins import PermissionsByUserMixin
 from office.forms import LeadForm, OrderForm
 from office.models.lead_model import LeadModel
 from plan.models import PlanModel
 from office.models.order_model import OrderModel
 
-
-class Timetable(View):
+class Timetable(PermissionsByUserMixin, View):
     template_name = 'timetable.html'
+    permission_required = 'view_timetable'
+
 
     def get(self, request):
+        print(request.user.employee.role, '----------- user')
         # Рассчитываем период
         today = timezone.now().date()
         start_date = today - timedelta(weeks=2)
@@ -71,8 +73,9 @@ class Timetable(View):
         return render(request, self.template_name, context)
     
 
-class Order(View):
+class Order(PermissionsByUserMixin, View):
     template_name = 'order.html'
+    permission_required = 'view_order'
 
     def get(self, request, id):
         order = OrderModel.objects.get(id=id)
@@ -81,6 +84,7 @@ class Order(View):
         }
 
         return render(request, self.template_name, context)
+
 
     def post(self, request):
         print(request.path)
