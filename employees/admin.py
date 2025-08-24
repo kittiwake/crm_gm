@@ -8,7 +8,7 @@ class PermissionInline(admin.TabularInline):
     extra = 1  # Количество пустых форм
     verbose_name = "Разрешение"
     verbose_name_plural = "Разрешения"
-    autocomplete_fields = ['permission']  # Автодополнение для разрешений
+    fields = ['permission']  # Автодополнение для разрешений
 
 @admin.register(RoleModel)
 class RoleAdmin(admin.ModelAdmin):

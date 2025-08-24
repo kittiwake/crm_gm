@@ -15,14 +15,14 @@ from office.forms import LeadForm, OrderForm
 from office.models.lead_model import LeadModel
 from plan.models import PlanModel
 from office.models.order_model import OrderModel
+from myauth.decorators import role_permission_required
+from myauth.permissions import PERMISSIONS
 
 class Timetable(PermissionsByUserMixin, View):
     template_name = 'timetable.html'
-    permission_required = 'view_timetable'
-
+    permission_required = PERMISSIONS.VIEW_TIMETABLE
 
     def get(self, request):
-        print(request.user.employee.role, '----------- user')
         # Рассчитываем период
         today = timezone.now().date()
         start_date = today - timedelta(weeks=2)
@@ -75,7 +75,7 @@ class Timetable(PermissionsByUserMixin, View):
 
 class Order(PermissionsByUserMixin, View):
     template_name = 'order.html'
-    permission_required = 'view_order'
+    permission_required = PERMISSIONS.VIEW_ORDER
 
     def get(self, request, id):
         order = OrderModel.objects.get(id=id)
@@ -84,7 +84,6 @@ class Order(PermissionsByUserMixin, View):
         }
 
         return render(request, self.template_name, context)
-
 
     def post(self, request):
         print(request.path)
@@ -126,11 +125,13 @@ class Order(PermissionsByUserMixin, View):
         
 from django.views.generic.edit import CreateView
 
-class CreateLead(CreateView):
+class CreateLead(PermissionsByUserMixin, CreateView):
     model = LeadModel
     form_class = LeadForm
     template_name = 'add_lead.html'
     success_url = reverse_lazy('office:kanban')
+    permission_required = PERMISSIONS.CREATE_LEAD
+
 
     def form_valid(self, form):
         # Устанавливаем текущую дату перед сохранением
@@ -139,12 +140,12 @@ class CreateLead(CreateView):
         return super().form_valid(form)
 
 
-class CreateOrder(CreateView):
+class CreateOrder(PermissionsByUserMixin, CreateView):
     model = OrderModel
     form_class = OrderForm
     template_name = 'add_order.html'
     success_url = reverse_lazy('create_order')
-
+    permission_required = PERMISSIONS.CREATE_ORDER
 
     def get_context_data(self, **kwargs):
         """Добавляем список лидов в контекст шаблона"""
