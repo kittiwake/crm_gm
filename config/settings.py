@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'office',
     'plan',
     'manufacture',
+    'myauth',
 ]
 
 MIDDLEWARE = [

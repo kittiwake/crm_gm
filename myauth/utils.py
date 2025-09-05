@@ -17,7 +17,7 @@ def check_custom_permission(user, permission_code):
         try:
             employee = user.employee
             has_perm = employee.role.permissions.filter(
-                permission__code_name=permission_code
+                permission=permission_code
             ).exists()
             cache.set(cache_key, has_perm, timeout=3000)
         except Exception:

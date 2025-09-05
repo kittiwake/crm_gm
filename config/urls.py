@@ -34,6 +34,7 @@ urlpatterns = [
     path('move-assignment/', move_assignment, name='move_assignment'),  
     path('employee/', include('employees.urls')),
     path('office/', include('office.urls')),
+    path('auth/', include('myauth.urls')),
 ]
 
 if settings.DEBUG:
