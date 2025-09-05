@@ -35,6 +35,7 @@ urlpatterns = [
     path('employee/', include('employees.urls')),
     path('office/', include('office.urls')),
     path('auth/', include('myauth.urls')),
+    path('plan/', include('manufacture.urls')),
 ]
 
 if settings.DEBUG:

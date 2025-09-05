@@ -2,10 +2,26 @@ from django.db import models
 
 from office.models.order_model import OrderModel
 
+class CehModel(models.Model):
+    """Модель цеха/производственного участка"""
+    name = models.CharField(max_length=100, verbose_name='Название цеха')
+    code = models.SlugField(max_length=10, unique=True, verbose_name='Код цеха')
+    description = models.TextField(blank=True, verbose_name='Описание')
+    
+    def __str__(self):
+        return self.name
+    
+    class Meta:
+        db_table = 'ceh'
+        verbose_name = 'Цех'
+        verbose_name_plural = 'Цеха'
+        ordering = ['name']
+
 class EtapModel(models.Model):
     
     title = models.CharField(max_length=100)
     product = models.ForeignKey('company.ProductModel', on_delete=models.PROTECT, verbose_name='Продукт')
+    ceh = models.ForeignKey(CehModel, on_delete=models.PROTECT, null=True, blank=True, verbose_name='Цех', related_name='etaps')    
     subsequence = models.IntegerField(default=0, verbose_name='Порядковый номер')
     def __str__(self):
         return self.title
