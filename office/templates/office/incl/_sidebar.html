@@ -1,0 +1,55 @@
+<div class="sidebar-container" style='background-color: #f5f5f5;'>
+    <h2>Лист ожидания</h2>
+    {% for order in orders_without_plan %}
+    <div class="row">
+    <div class="waiting-order col-sm-6">
+        <a href="{% url 'order' order.id %}">
+            {{ order.contract }}
+        </a>
+    </div>
+    <div class="col-sm-2">
+        {{ order.term|date:"d.m" }}
+    </div>
+    <div class="col-sm-4">
+        {{ order.sum}}
+    </div>
+    </div>
+    {% endfor %}
+    {% for plan in waiting_orders %}
+    <div class="waiting-order">
+        <a href="{% url 'order' plan.order.id %}">
+            {{ plan.order.contract }}
+        </a>
+    </div>
+    
+    {% endfor %}
+</div>
+<style>
+    .sidebar-container {
+        padding: 20px;
+        border-right: 1px solid #ddd;
+    }
+
+    .sidebar-container h2 {
+        font-size: 1.2rem;
+        margin-top: 0;
+        color: #333;
+        border-bottom: 2px solid #ccc;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+    }
+
+    .waiting-order a {
+        text-decoration: none;
+        color: #0d1925;
+        font-weight: 500;
+        display: block;
+        padding: 8px 12px;
+        border-radius: 8px;
+        transition: background-color 0.2s ease;
+    }
+
+    .waiting-order a:hover {
+        background-color: #e9ecef;
+    }
+</style>
