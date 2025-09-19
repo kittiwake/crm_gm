@@ -10,6 +10,7 @@ from django.contrib import messages
 from django.views import View
 
 from employees.models import EmployeeModel
+from manufacture.models import EtapModel, OrderEtapModel
 from myauth.mixins import PermissionsByUserMixin
 from office.forms import LeadForm, OrderForm
 from office.models.lead_model import LeadModel
@@ -18,8 +19,11 @@ from office.models.order_model import OrderModel
 from myauth.decorators import role_permission_required
 from myauth.permissions import PERMISSIONS
 
+
+
+
 class Timetable(PermissionsByUserMixin, View):
-    template_name = 'timetable.html'
+    template_name = 'office/timetable.html'
     permission_required = PERMISSIONS.VIEW_TIMETABLE
 
     def get(self, request):
@@ -37,7 +41,6 @@ class Timetable(PermissionsByUserMixin, View):
         waiting_orders = PlanModel.objects.select_related('order').filter(
             plan_date__isnull=True,
         ).order_by('order')
-        print(waiting_orders)
         orders_without_plan = OrderModel.objects.filter(planmodel__isnull=True)
 
         # Создаем структуру календаря
@@ -73,62 +76,143 @@ class Timetable(PermissionsByUserMixin, View):
         return render(request, self.template_name, context)
     
 
+
 class Order(PermissionsByUserMixin, View):
-    template_name = 'order.html'
+    template_name = 'office/order.html'
     permission_required = PERMISSIONS.VIEW_ORDER
 
     def get(self, request, id):
-        order = OrderModel.objects.get(id=id)
+        order = get_object_or_404(OrderModel, id=id)
+        
+        # 1. Получаем ВСЕ этапы из базы (все возможные этапы)
+        all_etaps = EtapModel.objects.all().order_by('subsequence')
+        
+        # 2. Получаем этапы этого конкретного заказа
+        order_etaps = OrderEtapModel.objects.filter(order=order).select_related('etap')
+        
+        # 3. Создаем список всех этапов со статусами
+        etap_list = []
+        for etap in all_etaps:
+            # Ищем этап в заказе
+            order_etap = order_etaps.filter(etap=etap).first()
+            
+            if order_etap:
+                # Этап есть в заказе
+                status = order_etap.status
+                status_color = {
+                    'NEW': 'blue',
+                    'IN_WORK': 'blue', 
+                    'DONE': 'green',
+                    'CANCELED': 'red'
+                }.get(status, 'gray')
+            else:
+                # Этапа нет в заказе - показываем серым
+                status = 'NOT_STARTED'
+                status_color = 'gray'
+            
+            etap_list.append({
+                'etap': etap,
+                'order_etap': order_etap,
+                'status': status,
+                'status_color': status_color,  # ← Добавляем цвет
+                'date': order_etap.date if order_etap else None,
+                'responsible': order_etap.responsible if order_etap else None
+            })
+        
         context = {
-            'order': order
+            'order': order,
+            'etap_list': etap_list,  # ← Теперь передаем ВСЕ этапы
+            'all_etaps': all_etaps,  # ← И отдельно все этапы если нужно
         }
-
+        
         return render(request, self.template_name, context)
 
-    def post(self, request):
-        print(request.path)
+
+    def post(self, request, id):
+        print(id)
+        print("Request path:", request.path)
+        
         if 'set-plan-date' in request.path:
-            # Обработка установки даты
-            print('идем менять дату')
-            return self.handle_set_plan_date(request)
+            print('будем менять дату')
+            return self.handle_set_plan_date(request, id)
+        elif 'update-etap' in request.path:
+            return self.handle_update_etap(request, id)
         
         return JsonResponse({"error": "Unknown action"}, status=400)
 
-    def handle_set_plan_date(self, request):
+    def handle_set_plan_date(self, request, order_id):
+        print(order_id)
+        print(request.body)
         try:
             data = json.loads(request.body)
-            print(data)
-            order_id = data.get('order_id')
+            print("Plan date data:", data)
+            
             plan_date = data.get('plan_date')
-            plan_date = datetime.strptime(plan_date, '%Y-%m-%d').date()
-            if not order_id or not plan_date:
-                return JsonResponse({"error": "Missing order_id or plan_date"}, status=400)
+            if not plan_date:
+                return JsonResponse({"error": "Missing plan_date"}, status=400)
 
-            # Одной операцией обновляем или создаем запись
-            order, created = PlanModel.objects.update_or_create(
-                order_id=order_id,  # Используем order_id вместо order__id
-                defaults={
-                    'plan_date': plan_date
-                }
+            plan_date = datetime.strptime(plan_date, '%Y-%m-%d').date()
+
+            plan, created = PlanModel.objects.update_or_create(
+                order_id=order_id,
+                defaults={'plan_date': plan_date}
             )
             
             return JsonResponse({
                 "success": True,
-                "formatted_date": order.plan_date.strftime('%d.%m.%Y'),
-                "created": created  # Дополнительно возвращаем флаг создания
+                "formatted_date": plan.plan_date.strftime('%d.%m.%Y'),
+                "created": created
             }, status=200)
             
-        except OrderModel.DoesNotExist:
-            return JsonResponse({"error": "Order not found"}, status=404)
+        except ValueError:
+            return JsonResponse({"error": "Invalid date format"}, status=400)
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=400)
+
+def handle_update_etap(self, request, order_id):
+    try:
+        data = json.loads(request.body)
+        etap_id = data.get('etap_id')
+        status = data.get('status')  # 'NEW' или 'IN_WORK'
+        date_str = data.get('date')  # Может быть None
         
+        order = get_object_or_404(OrderModel, id=order_id)
+        etap = get_object_or_404(EtapModel, id=etap_id)
+        
+        # Преобразуем дату если есть
+        date = None
+        if date_str:
+            date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        
+        # Создаем или обновляем этап заказа
+        order_etap, created = OrderEtapModel.objects.get_or_create(
+            order=order,
+            etap=etap,
+            defaults={
+                'status': status,
+                'data': date,
+                'responsible': None  # Всегда пустой ответственный
+            }
+        )
+        
+        if not created:
+            order_etap.status = status
+            order_etap.data = date
+            order_etap.responsible = None  # Всегда сбрасываем ответственного
+            order_etap.save()
+        
+        return JsonResponse({'success': True, 'message': 'Этап обновлен'})
+        
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+    
+
 from django.views.generic.edit import CreateView
 
 class CreateLead(PermissionsByUserMixin, CreateView):
     model = LeadModel
     form_class = LeadForm
-    template_name = 'add_lead.html'
+    template_name = 'office/add_lead.html'
     success_url = reverse_lazy('office:kanban')
     permission_required = PERMISSIONS.CREATE_LEAD
 
@@ -143,7 +227,7 @@ class CreateLead(PermissionsByUserMixin, CreateView):
 class CreateOrder(PermissionsByUserMixin, CreateView):
     model = OrderModel
     form_class = OrderForm
-    template_name = 'add_order.html'
+    template_name = 'office/add_order.html'
     success_url = reverse_lazy('create_order')
     permission_required = PERMISSIONS.CREATE_ORDER
 
@@ -177,8 +261,6 @@ class CreateOrder(PermissionsByUserMixin, CreateView):
     
     def form_valid(self, form):
         """Дополнительная обработка перед сохранением"""
-        print("Form is valid:", form.is_valid())  # Проверка валидности
-        print("Form errors:", form.errors)
         try:
             with transaction.atomic():
                 if 'lead_id' in self.kwargs:
@@ -201,7 +283,7 @@ from django.views.generic import TemplateView
 from employees.models import EmployeeModel
 
 class KanbanBoardView(TemplateView):
-    template_name = 'kanban.html'
+    template_name = 'office/kanban.html'
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -277,3 +359,4 @@ def change_lead_status(request, lead_id, new_status):
         messages.error(request, str(e))
     
     return redirect('office:kanban')
+

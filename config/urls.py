@@ -25,7 +25,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', Timetable.as_view(), name='timetable'),
     path('order/<int:id>', Order.as_view(), name='order'),
-    path('order/set-plan-date/', Order.as_view(), name='set_plan_date'),
+    # path('order/set-plan-date/', Order.as_view(), name='set_plan_date'),
     path('create-lead/', CreateLead.as_view(), name='create_lead'),
     path('create-order/', CreateOrder.as_view(), name='create_order'),  # Без лида
     path('create-order/<int:lead_id>/', CreateOrder.as_view(), name='create_order_from_lead'),   

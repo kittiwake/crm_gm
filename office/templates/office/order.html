@@ -448,7 +448,7 @@ function getCookie(name) {
 
 <div class="container">
     <div class="top-section">
-        <div class="order-number">Заказ №{{ order.lead.contract }}</div>
+        <div class="order-number">Заказ №{{ order.contract }}</div>
         <div class="contract-date">
             <p>Дата заключения: {{ order.contract_date|date:"d.m.Y" }}</p>
             <p>Срок договора: {{ order.term|date:"d.m.Y" }}</p>
@@ -533,9 +533,11 @@ function getCookie(name) {
     }
 
     function updatePlanDate(dateValue) {
+        
         // Получаем order ID из URL (предполагается формат '/order/123/')
         const pathParts = window.location.pathname.split('/');
         const orderID = pathParts[2]; // ['', 'order', '123', '']
+        console.log(orderID);
         
         // Получаем CSRF токен из cookies
         const csrfToken = getCookie('csrftoken');
@@ -543,7 +545,7 @@ function getCookie(name) {
             alert('CSRF токен не найден');
             return;
         }
-        const url = '/order/set-plan-date/';  // URL для обработки AJAX-запроса
+        const url = `/office/order/${orderID}/set-plan-date/`;  // URL для обработки AJAX-запроса
 
         fetch(url, {
             method: 'POST',
