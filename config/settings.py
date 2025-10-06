@@ -26,8 +26,9 @@ SECRET_KEY = 'django-insecure-%4@nu==lo7$rq8#upf84k2nmk-aofa_z_4ob8kmv)760hq0@!_
 DEBUG = True
 
 ALLOWED_HOSTS = [
-    'kittiwkekt.pythonanywhere.com',  # Ваш домен на PythonAnywhere
+    # 'kittiwkekt.pythonanywhere.com',  # Ваш домен на PythonAnywhere
     '127.0.0.1', 
+    '31.184.254.57',
 ]
 
 INTERNAL_IPS = [
@@ -144,7 +145,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = '/static/'
-STATIC_ROOT = '/home/kittiwkekt/crm_gm/static'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
