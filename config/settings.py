@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+from decouple import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -23,7 +24,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-%4@nu==lo7$rq8#upf84k2nmk-aofa_z_4ob8kmv)760hq0@!_'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = config('DEBUG', default=True, cast=bool)
 
 ALLOWED_HOSTS = [
     # 'kittiwkekt.pythonanywhere.com',  # Ваш домен на PythonAnywhere
@@ -86,26 +87,41 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+if DEBUG:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
     }
-}
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.postgresql',
-#         'NAME': 'postgres',
-#         'USER': 'postgres.rubywcgfzqrnfzzalpzh',
-#         'PASSWORD': 'ojnmFkhbZpNEPtnh',
-#         'HOST': 'aws-0-eu-central-2.pooler.supabase.com',
-#         'PORT': '5432',
-#         'OPTIONS': {
-#             'sslmode': 'require',  # Обязательно для Supabase
-#         },
-#     }
-# }
+else:
+
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': config('DB_NAME'),
+            'USER': config('DB_USER'),
+            'PASSWORD': config('DB_PASS'),
+            'HOST': config('DB_HOST'),
+            'PORT': config('DB_PORT'),
+        }
+    }
+
+
+
+    # DATABASES = {
+    #     'default': {
+    #         'ENGINE': 'django.db.backends.postgresql',
+    #         'NAME': 'postgres',
+    #         'USER': 'postgres.rubywcgfzqrnfzzalpzh',
+    #         'PASSWORD': 'ojnmFkhbZpNEPtnh',
+    #         'HOST': 'aws-0-eu-central-2.pooler.supabase.com',
+    #         'PORT': '5432',
+    #         'OPTIONS': {
+    #             'sslmode': 'require',  # Обязательно для Supabase
+    #         },
+    #     }
+    # }
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
